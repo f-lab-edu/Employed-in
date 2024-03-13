@@ -10,9 +10,9 @@ class UserRepository:
     def __init__(self, session: Session = Depends(get_db)):
         self.session = session
 
-    def get_user_by_id(self, user_id: int) -> User | None:
+    def get_user_by_email(self, user_email: str) -> User | None:
         return self.session.scalar(
-            select(User).where(User.id == user_id)
+            select(User).where(User.email == user_email)
         )
 
     def create_user(self, user: User) -> User:

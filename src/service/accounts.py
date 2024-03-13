@@ -1,6 +1,5 @@
 import os
 import bcrypt
-import random
 
 from datetime import datetime, timedelta
 from jose import jwt
@@ -24,18 +23,18 @@ class UserService:
             hashed_password.encode(self.encoding)
         )
 
-    def create_jwt(self, user_id: int) -> str:
+    def create_jwt(self, user_email: str) -> str:
         return jwt.encode(
         {
-            "sub": user_id,
+            "sub": user_email,
             "exp": datetime.now() + timedelta(days=7)
         },
             self.secret_key,
             algorithm=self.jwt_algorithm
         )
 
-    def decode_jwt(self, access_token: str) -> str:
+    def decode_jwt(self, access_token: str) -> int:
         payload: dict = jwt.decode(
             access_token, self.secret_key, algorithms=[self.jwt_algorithm]
         )
-
+        return payload["sub"]
