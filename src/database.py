@@ -2,13 +2,14 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel, pool
 
 from src import config
+from src.models import post, accounts, profile
 
 engine = create_async_engine(
     url=config.db.url,
     echo=config.db.echo,
-    connect_args={
-        "check_same_thread": False,
-    },
+    #connect_args={
+    #    "check_same_thread": False,
+    #},
     poolclass=pool.StaticPool,
 )
 
