@@ -33,7 +33,7 @@ class UserService:
             algorithm=self.jwt_algorithm
         )
 
-    def decode_jwt(self, access_token: str) -> int:
+    def decode_jwt(self, access_token: str) -> str:
         payload: dict = jwt.decode(
             access_token, self.secret_key, algorithms=[self.jwt_algorithm]
         )
