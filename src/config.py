@@ -1,9 +1,12 @@
+import os
+
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
 class DatabaseConfig(BaseSettings):
-    url: str = Field(default="sqlite+aiosqlite:///./db.sqlite3", alias="DATABASE_URL")
+    async_url: str = Field(default=os.getenv("ASYNC_DATABASE_URL"), alias="ASYNC_DATABASE_URL")
+    sync_url: str = Field(default=os.getenv("SYNC_DATABASE_URL"), alias="SYNC_DATABASE_URL")
     echo: bool = Field(default=True, alias="DATABASE_ECHO")
 
 
