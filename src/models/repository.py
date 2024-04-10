@@ -11,11 +11,10 @@ class UserRepository:
         self.session = session
 
     def get_user_by_email(self, user_email: str) -> User | None:
-        return self.session.scalar(
-            select(User).where(User.email == user_email)
-        )
+        return self.session.scalar(select(User).where(User.email == user_email))
 
     def create_user(self, user: User) -> User:
+        user.is_admin = False
         self.session.add(instance=user)
         self.session.commit()
         self.session.refresh(instance=user)

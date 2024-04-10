@@ -3,8 +3,7 @@ from fastapi import APIRouter, status
 from src.apis.accounts import auth
 from src.schema import response
 
-
-auth_router = APIRouter(tags=["auth"])
+auth_router = APIRouter(tags=["auth"], prefix="/account")
 
 auth_router.add_api_route(
     methods=["POST"],

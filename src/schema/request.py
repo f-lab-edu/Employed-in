@@ -1,8 +1,8 @@
 import re
+from typing import Optional
 
 from fastapi import HTTPException
-from typing import Optional
-from pydantic import BaseModel, field_validator, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 class SignUpRequest(BaseModel):
@@ -11,14 +11,17 @@ class SignUpRequest(BaseModel):
     confirm_password: str
     password: str
     nickname: Optional[str] = None
-    is_business: bool
+    is_business: Optional[bool] = False
     membership_id: Optional[int] = 1
 
     @field_validator("password")
     @classmethod
     def validate_password(cls, password, values):
         if values.data["confirm_password"] != password:
-            raise HTTPException(status_code=400, detail="Input password is not match with confirmed password")
+            raise HTTPException(
+                status_code=400,
+                detail="Input password is not match with confirmed password",
+            )
 
         upper = re.compile("^(?=.*?[A-Z])")
         lower = re.compile("^(?=.*?[a-z])")
