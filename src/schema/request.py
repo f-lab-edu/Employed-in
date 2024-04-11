@@ -23,6 +23,8 @@ class SignUpRequest(BaseModel):
                 detail="Input password is not match with confirmed password",
             )
 
+        # "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$"
+
         upper = re.compile("^(?=.*?[A-Z])")
         lower = re.compile("^(?=.*?[a-z])")
         digit = re.compile("^(?=.*?[0-9])")
