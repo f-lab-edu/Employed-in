@@ -12,11 +12,15 @@ def user_sign_up_handler(
     user_service: UserService = Depends(),
     user_repo: UserRepository = Depends(),
 ):
+    if user_repo.get_user_by_email(user_email=request.email):
+        raise HTTPException(status_code=400, detail="already registered")
+
     hashed_password: str = user_service.hash_password(plain_password=request.password)
     user: User = User(
         email=request.email,
         password=hashed_password,
         nickname=request.nickname,
+        phone_number=request.phone_number,
         is_business=request.is_business,
         membership_id=request.membership_id,
     )
