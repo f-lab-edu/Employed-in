@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src import config
 from src.apis.common import common_router
-from src.apis.posts import post_router
 from src.apis.accounts import auth_router
 from src.database import close_db, create_db_and_tables
 
@@ -20,7 +19,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(common_router)
-app.include_router(post_router)
 app.include_router(auth_router)
 app.add_middleware(
     CORSMiddleware,
