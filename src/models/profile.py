@@ -1,12 +1,7 @@
 import datetime
 
-from sqlmodel import Field, SQLModel
-
-
-class UserProfile(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    user_id: int = Field(foreign_key="user.id")
-    profile_id:  int = Field(foreign_key="profile.id")
+from sqlmodel import Field, SQLModel, Relationship
+from typing import Optional
 
 
 class UserEducation(SQLModel, table=True):
@@ -26,6 +21,8 @@ class UserCareer(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     career_id: int = Field(foreign_key="career.id")
 
+    careers: list["Career"] = Relationship(back_populates="career")
+
 
 class UserSkill(SQLModel, table=True):
     id: int = Field(primary_key=True)
@@ -38,8 +35,9 @@ class Profile(SQLModel, table=True):
     name: str = Field(nullable=True, max_length=30)
     occupation: str = Field(nullable=True, max_length=30)
     personal_description: str = Field(nullable=True, max_length=255)
-    country_id: int = Field(foreign_key="country.id")
     region: str = Field(nullable=True, max_length=50)
+    country_id: int = Field(foreign_key="country.id")
+    user_id: int = Field(foreign_key="user.id")
 
 
 class Education(SQLModel, table=True):
@@ -70,6 +68,8 @@ class Career(SQLModel, table=True):
     enterprise_id: int = Field(foreign_key="enterprise.id")
     employment_type_id: int = Field(foreign_key="employmenttype.id")
 
+    career: Optional[UserCareer] = Relationship(back_populates="careers")
+
 
 class EnterpriseType(SQLModel, table=True):
     id: int = Field(primary_key=True)
@@ -95,5 +95,4 @@ class Skill(SQLModel, table=True):
 class EmploymentType(SQLModel, table=True):
     id: int = Field(primary_key=True)
     name: str = Field(max_length=20)
-
 

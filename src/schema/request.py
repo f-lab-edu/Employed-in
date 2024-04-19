@@ -2,15 +2,15 @@ import re
 from typing import Optional
 
 from fastapi import HTTPException
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, field_validator, constr, conint
 
 
 class SignUpRequest(BaseModel):
     email: EmailStr
-    phone_number: str
+    phone_number: constr(max_length=25)
     confirm_password: str
     password: str
-    nickname: Optional[str] = None
+    nickname: Optional[constr(max_length=10)] = None
     is_business: Optional[bool] = False
     membership_id: Optional[int] = 1
 
@@ -52,3 +52,14 @@ class SignUpRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+
+class CreateProfileRequest(BaseModel):
+    name: Optional[constr(max_length=30)] = None
+    occupation: Optional[constr(max_length=30)] = None
+    personal_description: Optional[constr(max_length=255)] = None
+    region: Optional[constr(max_length=50)] = None
+    country_id: int
+
+
+
