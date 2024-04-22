@@ -7,7 +7,7 @@ from src.service.accounts import UserService
 from src.models.repository import ProfileRepository, UserRepository
 from src.schema.request import CreateProfileRequest
 from src.schema.response import CreateProfileResponse
-from src.lib.permission import basic_authentication, get_access_token
+from src.interfaces.permission import basic_authentication, get_access_token
 
 
 def profile_create_handler(
