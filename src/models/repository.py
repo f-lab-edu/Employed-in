@@ -30,6 +30,11 @@ class ProfileRepository:
     def __init__(self, session: Session = Depends(get_db)):
         self.session = session
 
+    def profile_validation(self, user_id: int, country_id: int) -> bool:
+        exists = self.session.scalar(select(Profile).where(Profile.user_id == user_id, Profile.country_id == country_id))
+
+        return False if exists else True
+
     def filter_profile_by_user(self, user_id: int) -> list:
         return self.session.scalar(select(Profile).where(Profile.user_id == user_id))
 

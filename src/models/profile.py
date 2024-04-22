@@ -1,6 +1,7 @@
 import datetime
 
 from sqlmodel import Field, SQLModel, Relationship
+from sqlalchemy import UniqueConstraint
 from typing import Optional
 
 
@@ -31,6 +32,9 @@ class UserSkill(SQLModel, table=True):
 
 
 class Profile(SQLModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("country_id", "user_id", name="profile_uq"),
+    )
     id: int = Field(primary_key=True)
     name: str = Field(nullable=True, max_length=30)
     occupation: str = Field(nullable=True, max_length=30)

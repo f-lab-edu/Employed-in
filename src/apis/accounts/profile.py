@@ -17,9 +17,10 @@ def profile_create_handler(
     profile_repo: ProfileRepository = Depends()
     ):
 
-    #user_email = user_service.decode_jwt(access_token=Header("Authorization"))
-    #user = user_repo.get_user_by_email(user_email)
     user: User = basic_authentication(token=token, user_repo=user_repo)
+
+    if not profile_repo.profile_validation(user_id=user.id, country_id=request.country_id):
+        raise HTTPException(status_code=400, detail="Profile for that country exists")
 
     new_profile: Profile = Profile(
         name=request.name,
