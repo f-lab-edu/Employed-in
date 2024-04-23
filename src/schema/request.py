@@ -60,6 +60,6 @@ class CreateProfileRequest(BaseModel):
     personal_description: Optional[constr(max_length=255)] = None
     region: Optional[constr(max_length=50)] = None
     country_id: int
-
+    profile_id: Optional[int] = None
 
 

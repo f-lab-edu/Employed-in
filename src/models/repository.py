@@ -46,5 +46,8 @@ class ProfileRepository:
         self.session.refresh(instance=profile)
         return profile
 
-    #def update_profile(self, profile: Profile) -> Profile:
-
+    def delete_profile(self, profile_id: int) -> Profile:
+        profile, country = self.get_profile_by_id(profile_id=profile_id)
+        self.session.delete(profile)
+        self.session.commit()
+        return profile

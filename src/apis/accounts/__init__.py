@@ -40,3 +40,17 @@ account_router.add_api_route(
     response_model=response.GetProfileResponse,
     status_code=status.HTTP_200_OK
 )
+account_router.add_api_route(
+    methods=["PATCH"],
+    path="/profile",
+    endpoint=profile.update_profile_handler,
+    response_model=response.CreateProfileResponse,
+    status_code=status.HTTP_201_CREATED
+)
+account_router.add_api_route(
+    methods=["DELETE"],
+    path="/profiles/{profile_id}",
+    endpoint=profile.delete_profile_handler,
+    response_model=response.CreateProfileResponse,
+    status_code=status.HTTP_200_OK
+)

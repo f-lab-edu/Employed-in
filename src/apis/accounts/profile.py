@@ -79,3 +79,43 @@ def profile_handler(
                 country_name=country
             )
 
+
+def update_profile_handler(
+        request: CreateProfileRequest,
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        profile_repo: ProfileRepository = Depends()
+):
+
+    user: User = basic_authentication(token=token, user_repo=user_repo)
+
+    if not request.profile_id:
+        raise HTTPException(status_code=404, detail='profile id missed')
+
+    profile, country = profile_repo.get_profile_by_id(profile_id=request.profile_id)
+
+    profile.name = request.name
+    profile.occupation = request.occupation
+    profile.personal_description = request.personal_description
+    profile.region = request.region
+    profile.country_id = request.country_id
+
+    profile: Profile = profile_repo.create_profile(profile)
+
+    return CreateProfileResponse(message="Profile updated", data=profile)
+
+
+def delete_profile_handler(
+        profile_id: int,
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        profile_repo: ProfileRepository = Depends()
+):
+
+    user: User = basic_authentication(token=token, user_repo=user_repo)
+
+    profile: Profile = profile_repo.delete_profile(profile_id=profile_id)
+
+    return CreateProfileResponse(message="Profile deleted", data=profile)
+
+
