@@ -1,12 +1,12 @@
 from fastapi import HTTPException, Header, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from src.models.profile import Profile
+from src.models.profile import Profile, Country
 from src.models.accounts import User
 from src.service.accounts import UserService
 from src.models.repository import ProfileRepository, UserRepository
 from src.schema.request import CreateProfileRequest
-from src.schema.response import CreateProfileResponse
+from src.schema.response import CreateProfileResponse, GetProfileResponse
 from src.interfaces.permission import basic_authentication, get_access_token
 
 
@@ -33,3 +33,49 @@ def profile_create_handler(
     profile: Profile = profile_repo.create_profile(new_profile)
 
     return CreateProfileResponse(message="New profile created", data=profile)
+
+
+def profile_lists_handler(
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        profile_repo: ProfileRepository = Depends()
+):
+    user: User = basic_authentication(token=token, user_repo=user_repo)
+
+    profiles: list[(Profile, Country)] = profile_repo.filter_profile_by_user(user_id=user.id)
+
+    return sorted(
+        [
+            GetProfileResponse(
+                id=profile.id,
+                name=profile.name,
+                occupation=profile.occupation,
+                personal_description=profile.personal_description,
+                region=profile.region,
+                country_name=country
+            )
+            for profile, country in profiles
+        ],
+        key=lambda profile: -profile.id,
+    )
+
+
+def profile_handler(
+        profile_id: int,
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        profile_repo: ProfileRepository = Depends(),
+):
+    user: User = basic_authentication(token=token, user_repo=user_repo)
+
+    profile, country = profile_repo.get_profile_by_id(profile_id=profile_id)
+
+    return GetProfileResponse(
+                id=profile.id,
+                name=profile.name,
+                occupation=profile.occupation,
+                personal_description=profile.personal_description,
+                region=profile.region,
+                country_name=country
+            )
+

@@ -5,6 +5,34 @@ from sqlalchemy import UniqueConstraint
 from typing import Optional
 
 
+class EnterpriseType(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    name: str = Field(max_length=100)
+    degree_type: str = Field(nullable=True, default=None, max_length=20)
+
+
+class Industry(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    name: str = Field(max_length=100)
+
+
+class Country(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    name: str = Field(max_length=100)
+
+    profiles: list["Profile"] = Relationship(back_populates="country")
+
+
+class Skill(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    name: str = Field(max_length=30)
+
+
+class EmploymentType(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    name: str = Field(max_length=20)
+
+
 class UserEducation(SQLModel, table=True):
     id: int = Field(primary_key=True)
     user_id: int = Field(foreign_key="user.id")
@@ -43,6 +71,8 @@ class Profile(SQLModel, table=True):
     country_id: int = Field(foreign_key="country.id")
     user_id: int = Field(foreign_key="user.id")
 
+    country: Country | None = Relationship(back_populates="profiles")
+
 
 class Education(SQLModel, table=True):
     id: int = Field(primary_key=True)
@@ -73,30 +103,3 @@ class Career(SQLModel, table=True):
     employment_type_id: int = Field(foreign_key="employmenttype.id")
 
     career: Optional[UserCareer] = Relationship(back_populates="careers")
-
-
-class EnterpriseType(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str = Field(max_length=100)
-    degree_type: str = Field(nullable=True, default=None, max_length=20)
-
-
-class Industry(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str = Field(max_length=100)
-
-
-class Country(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str = Field(max_length=100)
-
-
-class Skill(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str = Field(max_length=30)
-
-
-class EmploymentType(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str = Field(max_length=20)
-

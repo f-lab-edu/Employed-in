@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from src.database import get_db
 from src.models.accounts import User
-from src.models.profile import Profile, UserCareer, Career
+from src.models.profile import Profile, UserCareer, Career, Country
 
 
 class UserRepository:
@@ -15,7 +15,6 @@ class UserRepository:
         return self.session.scalar(select(User).where(User.email == user_email))
 
     def create_user(self, user: User) -> User:
-        user.is_admin = False
         self.session.add(instance=user)
         self.session.commit()
         self.session.refresh(instance=user)
@@ -31,15 +30,15 @@ class ProfileRepository:
         self.session = session
 
     def profile_validation(self, user_id: int, country_id: int) -> bool:
-        exists = self.session.scalar(select(Profile).where(Profile.user_id == user_id, Profile.country_id == country_id))
+        exists = self.session.scalar(select(Profile).where(Profile.user_id ==user_id, Profile.country_id == country_id))
 
         return False if exists else True
 
-    def filter_profile_by_user(self, user_id: int) -> list:
-        return self.session.scalar(select(Profile).where(Profile.user_id == user_id))
+    def filter_profile_by_user(self, user_id: int) -> list[(Profile, Country)]:
+        return list(self.session.execute(select(Profile, Country.name).join(Country).where(Profile.user_id == user_id)))
 
-    def get_profile_by_id(self, profile_id: int) -> Profile:
-        return self.session.scalar(select(Profile).where(Profile.id == profile_id))
+    def get_profile_by_id(self, profile_id: int) -> (Profile, str):
+        return self.session.execute(select(Profile, Country.name).join(Country).where(Profile.id == profile_id)).fetchone()
 
     def create_profile(self, profile: Profile) -> Profile:
         self.session.add(instance=profile)
