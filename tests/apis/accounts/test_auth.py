@@ -20,7 +20,7 @@ async def test_signup_successfully(client: AsyncClient, session: AsyncSession, m
 
     test_user = User(
         id=None,
-        email="test@test.com",
+        email="unittest@test.com",
         password="hashed",
         nickname=None,
         phone_number="010-1111-1111",
@@ -39,7 +39,7 @@ async def test_signup_successfully(client: AsyncClient, session: AsyncSession, m
     response = await client.post(
         url="/account/signup",
         json={
-            "email": "test@test.com",
+            "email": "unittest@test.com",
             "password": "Plain123!",
             "confirm_password": "Plain123!",
             "phone_number": "010-1111-1111",
@@ -49,7 +49,7 @@ async def test_signup_successfully(client: AsyncClient, session: AsyncSession, m
 
     token = jwt.encode(
         {
-            "sub": "test@test.com",
+            "sub": "unittest@test.com",
             "exp": datetime.datetime.now() + datetime.timedelta(days=7),
         },
         os.getenv("SECRET_KEY"),
@@ -143,7 +143,7 @@ async def test_login_successfully(client: AsyncClient, session: AsyncSession, mo
 @pytest.mark.asyncio
 async def test_login_no_user_case(client: AsyncClient, session: AsyncSession, mocker):
     response = await client.post(
-        url="/account/login", json={"email": "test@test.com", "password": "Plain123!"}
+        url="/account/login", json={"email": "nouser@test.com", "password": "Plain123!"}
     )
 
     data = response.json()

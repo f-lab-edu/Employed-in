@@ -14,15 +14,16 @@ def get_access_token(auth_header: HTTPAuthorizationCredentials | None = Depends(
     return auth_header.credentials
 
 
-def basic_authentication(token: str, user_repo: UserRepository) -> User:
-    verified = UserService().decode_jwt(access_token=token)
+class Authentications:
+    def basic_authentication(token: str, user_repo: UserRepository) -> User:
+        verified = UserService().decode_jwt(access_token=token)
 
-    if not verified:
-        raise HTTPException(status_code=403, detail="Invalid token")
+        if not verified:
+            raise HTTPException(status_code=403, detail="Invalid token")
 
-    user = user_repo.get_user_by_email(user_email=verified)
+        user = user_repo.get_user_by_email(user_email=verified)
 
-    if not user:
-        raise HTTPException(status_code=403, detail="No user")
+        if not user:
+            raise HTTPException(status_code=403, detail="No user")
 
-    return user
+        return user

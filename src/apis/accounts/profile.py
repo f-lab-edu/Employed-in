@@ -7,7 +7,7 @@ from src.service.accounts import UserService
 from src.models.repository import ProfileRepository, UserRepository
 from src.schema.request import CreateProfileRequest
 from src.schema.response import CreateProfileResponse, GetProfileResponse
-from src.interfaces.permission import basic_authentication, get_access_token
+from src.interfaces.permission import get_access_token, Authentications
 
 
 def profile_create_handler(
@@ -17,7 +17,7 @@ def profile_create_handler(
     profile_repo: ProfileRepository = Depends()
     ):
 
-    user: User = basic_authentication(token=token, user_repo=user_repo)
+    user: User = Authentications.basic_authentication(token=token, user_repo=user_repo)
 
     if not profile_repo.profile_validation(user_id=user.id, country_id=request.country_id):
         raise HTTPException(status_code=400, detail="Profile for that country exists")
@@ -40,7 +40,7 @@ def profile_lists_handler(
         user_repo: UserRepository = Depends(),
         profile_repo: ProfileRepository = Depends()
 ):
-    user: User = basic_authentication(token=token, user_repo=user_repo)
+    user: User = Authentications.basic_authentication(token=token, user_repo=user_repo)
 
     profiles: list[(Profile, Country)] = profile_repo.filter_profile_by_user(user_id=user.id)
 
@@ -56,7 +56,7 @@ def profile_lists_handler(
             )
             for profile, country in profiles
         ],
-        key=lambda profile: -profile.id,
+        key=lambda profile: profile.id,
     )
 
 
@@ -66,9 +66,12 @@ def profile_handler(
         user_repo: UserRepository = Depends(),
         profile_repo: ProfileRepository = Depends(),
 ):
-    user: User = basic_authentication(token=token, user_repo=user_repo)
+    user: User = Authentications.basic_authentication(token=token, user_repo=user_repo)
 
-    profile, country = profile_repo.get_profile_by_id(profile_id=profile_id)
+    profile, country = profile_repo.get_profile_by_id(profile_id=profile_id, user_id=user.id)
+
+    if not profile:
+        raise HTTPException(status_code=400, detail="Invalid profile id")
 
     return GetProfileResponse(
                 id=profile.id,
@@ -87,12 +90,15 @@ def update_profile_handler(
         profile_repo: ProfileRepository = Depends()
 ):
 
-    user: User = basic_authentication(token=token, user_repo=user_repo)
+    user: User = Authentications.basic_authentication(token=token, user_repo=user_repo)
 
     if not request.profile_id:
-        raise HTTPException(status_code=404, detail='profile id missed')
+        raise HTTPException(status_code=400, detail='profile id missed')
 
-    profile, country = profile_repo.get_profile_by_id(profile_id=request.profile_id)
+    profile, country = profile_repo.get_profile_by_id(profile_id=request.profile_id, user_id=user.id)
+
+    if not profile:
+        raise HTTPException(status_code=400, detail='Invalid profile id')
 
     profile.name = request.name
     profile.occupation = request.occupation
@@ -112,9 +118,12 @@ def delete_profile_handler(
         profile_repo: ProfileRepository = Depends()
 ):
 
-    user: User = basic_authentication(token=token, user_repo=user_repo)
+    user: User = Authentications.basic_authentication(token=token, user_repo=user_repo)
 
-    profile: Profile = profile_repo.delete_profile(profile_id=profile_id)
+    profile: Profile | None = profile_repo.delete_profile(profile_id=profile_id, user_id=user.id)
+
+    if not profile:
+        raise HTTPException(status_code=400, detail="Invalid profile id")
 
     return CreateProfileResponse(message="Profile deleted", data=profile)
 

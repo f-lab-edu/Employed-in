@@ -37,8 +37,13 @@ class ProfileRepository:
     def filter_profile_by_user(self, user_id: int) -> list[(Profile, Country)]:
         return list(self.session.execute(select(Profile, Country.name).join(Country).where(Profile.user_id == user_id)))
 
-    def get_profile_by_id(self, profile_id: int) -> (Profile, str):
-        return self.session.execute(select(Profile, Country.name).join(Country).where(Profile.id == profile_id)).fetchone()
+    def get_profile_by_id(self, profile_id: int, user_id: int):
+        result = self.session.execute(select(Profile, Country.name).join(Country).where(Profile.id == profile_id, Profile.user_id == user_id)).fetchone()
+
+        if not result:
+            return (None, None)
+
+        return (result[0], result[1])
 
     def create_profile(self, profile: Profile) -> Profile:
         self.session.add(instance=profile)
@@ -46,8 +51,12 @@ class ProfileRepository:
         self.session.refresh(instance=profile)
         return profile
 
-    def delete_profile(self, profile_id: int) -> Profile:
-        profile, country = self.get_profile_by_id(profile_id=profile_id)
+    def delete_profile(self, profile_id: int, user_id: int) -> Profile | None:
+        profile, country = self.get_profile_by_id(profile_id=profile_id, user_id=user_id)
+
+        if not profile:
+            return None
+
         self.session.delete(profile)
         self.session.commit()
         return profile
