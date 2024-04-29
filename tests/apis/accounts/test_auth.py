@@ -5,7 +5,9 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 from jose import jwt
+from jose.exceptions import ExpiredSignatureError
 from sqlmodel.ext.asyncio.session import AsyncSession
+from freezegun import freeze_time
 
 from src.models.accounts import User
 from src.models.repository import UserRepository
@@ -182,3 +184,15 @@ async def test_login_wrong_password_case(
 
     assert response.status_code == 401
     assert data == {"detail": "Invalid password"}
+
+
+@pytest.mark.asyncio
+async def test_expired_token():
+    exp_token = UserService().create_jwt(user_email="exptest@exptest.com")
+
+    with freeze_time(datetime.datetime.now() + datetime.timedelta(days=7)):
+        try:
+            UserService().decode_jwt(access_token=exp_token)
+
+        except Exception as e:
+            assert e is ExpiredSignatureError

@@ -3,6 +3,8 @@ import bcrypt
 
 from datetime import datetime, timedelta
 from jose import jwt
+from jose.exceptions import ExpiredSignatureError
+from fastapi import HTTPException
 
 
 class UserService:
@@ -34,7 +36,12 @@ class UserService:
         )
 
     def decode_jwt(self, access_token: str) -> str:
-        payload: dict = jwt.decode(
-            access_token, self.secret_key, algorithms=[self.jwt_algorithm]
-        )
+        try:
+            payload: dict = jwt.decode(
+                access_token, self.secret_key, algorithms=[self.jwt_algorithm]
+            )
+
+        except ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token expired")
+
         return payload["sub"]
