@@ -54,3 +54,10 @@ account_router.add_api_route(
     response_model=response.CreateProfileResponse,
     status_code=status.HTTP_200_OK
 )
+account_router.add_api_route(
+    methods=["GET"],
+    path="/countries",
+    endpoint=profile.country_list_handler,
+    response_model=list[response.GetCountryResponse],
+    status_code=status.HTTP_200_OK
+)

@@ -511,3 +511,57 @@ async def test_delete_profile_fail_invalid_id(client: AsyncClient, session: Asyn
     data = response.json()
 
     assert data == {"detail": "Invalid profile id"}
+
+
+@pytest.mark.asyncio
+async def test_country_list_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    test_countries = [
+        Country(
+            id=1,
+            name="South Korea"
+        ),
+        Country(
+            id=2,
+            name="North Korea"
+        )
+    ]
+
+    mocker_user = mocker.patch.object(
+        Authentications, "basic_authentication", return_value=test_user
+    )
+
+    mocker_profiles = mocker.patch.object(
+        ProfileRepository, "get_country_list", return_value=test_countries
+    )
+
+    response = await client.get(
+        url="/account/countries",
+        headers={"Authorization": "Bearer test"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    data = response.json()
+
+    assert data == [
+        {
+            "id": 1,
+            "name": "South Korea"
+        },
+        {
+            "id": 2,
+            "name": "North Korea"
+        }
+    ]

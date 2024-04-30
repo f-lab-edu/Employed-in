@@ -60,3 +60,6 @@ class ProfileRepository:
         self.session.delete(profile)
         self.session.commit()
         return profile
+
+    def get_country_list(self) -> list[Country]:
+        return list(self.session.execute(select(Country)))

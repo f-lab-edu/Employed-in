@@ -19,3 +19,8 @@ class GetProfileResponse(BaseModel):
     personal_description: str
     region: str
     country_name: str
+
+
+class GetCountryResponse(BaseModel):
+    id: int
+    name: str

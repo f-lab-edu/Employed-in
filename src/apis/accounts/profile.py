@@ -6,7 +6,8 @@ from src.models.accounts import User
 from src.service.accounts import UserService
 from src.models.repository import ProfileRepository, UserRepository
 from src.schema.request import CreateProfileRequest
-from src.schema.response import CreateProfileResponse, GetProfileResponse
+
+from src.schema.response import CreateProfileResponse, GetProfileResponse, GetCountryResponse
 from src.interfaces.permission import get_access_token, Auths
 
 
@@ -128,3 +129,22 @@ def delete_profile_handler(
     return CreateProfileResponse(message="Profile deleted", data=profile)
 
 
+def country_list_handler(
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        profile_repo: ProfileRepository = Depends()
+):
+    Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    countries: list[Country] = profile_repo.get_country_list()
+
+    return sorted(
+        [
+            GetCountryResponse(
+                id=country.id,
+                name=country.name
+            )
+            for country in countries
+        ],
+        key=lambda country: country.id
+    )
