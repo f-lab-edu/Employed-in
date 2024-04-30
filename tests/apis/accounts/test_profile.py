@@ -7,7 +7,7 @@ from httpx import AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.models.accounts import User
-from src.models.profile import Profile, Country
+from src.models.profile import Profile, Country, Skill, UserSkill
 from src.models.repository import ProfileRepository, UserRepository
 from src.service.accounts import UserService
 from src.interfaces.permission import Auths
@@ -528,14 +528,14 @@ async def test_country_list_successfully(client: AsyncClient, session: AsyncSess
     )
 
     test_countries = [
-        Country(
+        (Country(
             id=1,
             name="South Korea"
-        ),
-        Country(
+        ),),
+        (Country(
             id=2,
             name="North Korea"
-        )
+        ),)
     ]
 
     mocker_user = mocker.patch.object(
@@ -565,3 +565,356 @@ async def test_country_list_successfully(client: AsyncClient, session: AsyncSess
             "name": "North Korea"
         }
     ]
+
+
+@pytest.mark.asyncio
+async def test_register_exist_skill_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    test_skill = Skill(
+        id=1,
+        name="cemen"
+    )
+
+    test_relation = UserSkill(
+        id=1,
+        user_id=1,
+        skill_id=1
+    )
+
+    mocker_user = mocker.patch.object(
+        Authentications, "basic_authentication", return_value=test_user
+    )
+
+    mocker_new_skill = mocker.patch.object(
+        ProfileRepository, "register_new_skill", return_value=test_skill
+    )
+
+    mocker_relation = mocker.patch.object(
+        ProfileRepository, "register_user_skill", return_value=test_relation
+    )
+
+    response = await client.post(
+        url="/account/skills",
+        headers={"Authorization": "Bearer test"},
+        json={
+            "name": "cemen"
+        }
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+
+    data = response.json()
+
+    assert data == {
+        "message": "Skill is registered"
+    }
+
+
+@pytest.mark.asyncio
+async def test_register_new_skill_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    test_skill = Skill(
+        id=1,
+        name="cemen"
+    )
+
+    test_relation = UserSkill(
+        id=1,
+        user_id=1,
+        skill_id=1
+    )
+
+    mocker_user = mocker.patch.object(
+        Authentications, "basic_authentication", return_value=test_user
+    )
+
+    mocker_new_skill = mocker.patch.object(
+        ProfileRepository, "skill_validation", return_value=True
+    )
+
+    mocker_relation = mocker.patch.object(
+        ProfileRepository, "register_user_skill", return_value=test_relation
+    )
+
+    response = await client.post(
+        url="/account/skills",
+        headers={"Authorization": "Bearer test"},
+        json={
+            "id": 1,
+            "name": "cemen"
+        }
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+
+    data = response.json()
+
+    assert data == {
+        "message": "Skill is registered"
+    }
+
+
+@pytest.mark.asyncio
+async def test_register_invalid_skill_id_fail(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    test_skill = Skill(
+        id=1,
+        name="cemen"
+    )
+
+    test_relation = UserSkill(
+        id=1,
+        user_id=1,
+        skill_id=1
+    )
+
+    mocker_user = mocker.patch.object(
+        Authentications, "basic_authentication", return_value=test_user
+    )
+
+    mocker_new_skill = mocker.patch.object(
+        ProfileRepository, "skill_validation", return_value=False
+    )
+
+    mocker_relation = mocker.patch.object(
+        ProfileRepository, "register_user_skill", return_value=test_relation
+    )
+
+    response = await client.post(
+        url="/account/skills",
+        headers={"Authorization": "Bearer test"},
+        json={
+            "id": 1,
+            "name": "cemen"
+        }
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    data = response.json()
+
+    assert data == {
+        "detail": "Skill id and name is not match"
+    }
+
+
+@pytest.mark.asyncio
+async def test_all_skill_list_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    test_skills = [
+        (Skill(
+            id=1,
+            name="test1"
+        ),),
+        (Skill(
+            id=2,
+            name="test2"
+        ),),
+        (Skill(
+            id=3,
+            name="test3"
+        ),)
+    ]
+
+    mocker_user = mocker.patch.object(
+        Authentications, "basic_authentication", return_value=test_user
+    )
+
+    mocker_new_skill = mocker.patch.object(
+        ProfileRepository, "get_all_skill_list", return_value=test_skills
+    )
+
+    response = await client.get(
+        url="/account/skills",
+        headers={"Authorization": "Bearer test"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    data = response.json()
+
+    assert data == [
+        {
+            "id": 1,
+            "name": "test1"
+        },
+        {
+            "id": 2,
+            "name": "test2"
+        },
+        {
+            "id": 3,
+            "name": "test3"
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_registered_skill_list_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    test_skills = [
+        (
+            UserSkill(
+                user_id=1,
+                skill_id=1
+            ), Skill(
+                id=1,
+                name="test1"
+            )
+        ),
+        (
+            UserSkill(
+                user_id=1,
+                skill_id=2
+            ), Skill(
+                id=2,
+                name="test2"
+            )
+        ),
+        (
+            UserSkill(
+                user_id=1,
+                skill_id=3
+            ), Skill(
+                id=3,
+                name="test3"
+            )
+        )
+    ]
+
+    mocker_user = mocker.patch.object(
+        Authentications, "basic_authentication", return_value=test_user
+    )
+
+    mocker_new_skill = mocker.patch.object(
+        ProfileRepository, "filter_user_skill", return_value=test_skills
+    )
+
+    response = await client.get(
+        url="/account/skills/registered",
+        headers={"Authorization": "Bearer test"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    data = response.json()
+
+    assert data == [
+        {
+            "id": 1,
+            "name": "test1"
+        },
+        {
+            "id": 2,
+            "name": "test2"
+        },
+        {
+            "id": 3,
+            "name": "test3"
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_registered_skill_delete_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    mocker_user = mocker.patch.object(
+        Authentications, "basic_authentication", return_value=test_user
+    )
+
+    test_relation = UserSkill(
+        id=1,
+        user_id=1,
+        skill_id=1
+    )
+
+    mocker_user = mocker.patch.object(
+        Authentications, "basic_authentication", return_value=test_user
+    )
+
+    mocker_relation = mocker.patch.object(
+        ProfileRepository, "get_registered_relation", return_value=test_relation
+    )
+
+    mocker_relation = mocker.patch.object(
+        ProfileRepository, "delete_registered_skill", return_value=test_relation
+    )
+
+    response = await client.delete(
+        url="/account/skills/registered/2",
+        headers={"Authorization": "Bearer test"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    data = response.json()
+
+    assert data == {
+        "message": "Skill is deleted"
+    }

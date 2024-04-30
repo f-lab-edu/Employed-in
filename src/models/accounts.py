@@ -1,7 +1,8 @@
 import datetime
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, Relationship
 
+from .profile import UserSkill
 
 class User(SQLModel, table=True):
     id: int = Field(primary_key=True)
@@ -17,6 +18,8 @@ class User(SQLModel, table=True):
         default_factory=lambda: datetime.datetime.now(datetime.timezone.utc)
     )
     membership_id: int = Field(foreign_key="membership.id")
+
+    skills: list["Skill"] = Relationship(back_populates="users", link_model=UserSkill)
 
 
 class UserRelation(SQLModel, table=True):

@@ -5,6 +5,34 @@ from sqlalchemy import UniqueConstraint
 from typing import Optional
 
 
+class UserEducation(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    education_id: int = Field(foreign_key="education.id")
+
+
+class UserEnterprise(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    enterprise_id: int = Field(foreign_key="enterprise.id")
+
+
+class UserCareer(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    career_id: int = Field(foreign_key="career.id")
+
+    careers: list["Career"] = Relationship(back_populates="career")
+
+
+class UserSkill(SQLModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("skill_id", "user_id", name="userskill_uq"),
+    )
+    user_id: int | None = Field(foreign_key="user.id", default=None, primary_key=True)
+    skill_id: int | None = Field(foreign_key="skill.id", default=None, primary_key=True)
+
+
 class EnterpriseType(SQLModel, table=True):
     id: int = Field(primary_key=True)
     name: str = Field(max_length=100)
@@ -27,36 +55,12 @@ class Skill(SQLModel, table=True):
     id: int = Field(primary_key=True)
     name: str = Field(max_length=30)
 
+    users: list["User"] = Relationship(back_populates="skills", link_model=UserSkill)
+
 
 class EmploymentType(SQLModel, table=True):
     id: int = Field(primary_key=True)
     name: str = Field(max_length=20)
-
-
-class UserEducation(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    user_id: int = Field(foreign_key="user.id")
-    education_id: int = Field(foreign_key="education.id")
-
-
-class UserEnterprise(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    user_id: int = Field(foreign_key="user.id")
-    enterprise_id: int = Field(foreign_key="enterprise.id")
-
-
-class UserCareer(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    user_id: int = Field(foreign_key="user.id")
-    career_id: int = Field(foreign_key="career.id")
-
-    careers: list["Career"] = Relationship(back_populates="career")
-
-
-class UserSkill(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    user_id: int = Field(foreign_key="user.id")
-    skill_id: int = Field(foreign_key="skill.id")
 
 
 class Profile(SQLModel, table=True):

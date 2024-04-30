@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from src.models.profile import Profile
+from src.models.profile import Profile, Skill
 
 
 class JWTResponse(BaseModel):
@@ -22,5 +22,14 @@ class GetProfileResponse(BaseModel):
 
 
 class GetCountryResponse(BaseModel):
+    id: int
+    name: str
+
+
+class RegisterSkillResponse(BaseModel):
+    message: str
+
+
+class SkillResponse(BaseModel):
     id: int
     name: str

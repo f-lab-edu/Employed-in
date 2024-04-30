@@ -57,7 +57,35 @@ account_router.add_api_route(
 account_router.add_api_route(
     methods=["GET"],
     path="/countries",
-    endpoint=profile.country_list_handler,
+    endpoint=profile.get_country_list_handler,
     response_model=list[response.GetCountryResponse],
+    status_code=status.HTTP_200_OK
+)
+account_router.add_api_route(
+    methods=["POST"],
+    path="/skills",
+    endpoint=profile.register_skill_handler,
+    response_model=response.RegisterSkillResponse,
+    status_code=status.HTTP_201_CREATED
+)
+account_router.add_api_route(
+    methods=["GET"],
+    path="/skills/registered",
+    endpoint=profile.filter_registered_skill_handler,
+    response_model=list[response.SkillResponse],
+    status_code=status.HTTP_200_OK
+)
+account_router.add_api_route(
+    methods=["GET"],
+    path="/skills",
+    endpoint=profile.get_skill_list_handler,
+    response_model=list[response.SkillResponse],
+    status_code=status.HTTP_200_OK
+)
+account_router.add_api_route(
+    methods=["DELETE"],
+    path="/skills/registered/{skill_id}",
+    endpoint=profile.delete_registered_skill_handler,
+    response_model=response.RegisterSkillResponse,
     status_code=status.HTTP_200_OK
 )

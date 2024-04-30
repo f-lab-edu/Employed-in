@@ -63,3 +63,6 @@ class CreateProfileRequest(BaseModel):
     profile_id: Optional[int] = None
 
 
+class RegisterSkillRequest(BaseModel):
+    id: Optional[int] = None
+    name: str
