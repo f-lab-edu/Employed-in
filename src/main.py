@@ -1,6 +1,9 @@
 from contextlib import asynccontextmanager
 
+import os
 import uvicorn
+
+from starlette_csrf import CSRFMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -27,7 +30,12 @@ app.add_middleware(
     allow_methods=config.cors.methods.split(","),
     allow_headers=config.cors.headers.split(","),
 )
-
+app.add_middleware(
+    CSRFMiddleware,
+    secret=os.getenv("SECRET_KEY"),
+    sensitive_cookies={"TEST_TOKEN"},
+    cookie_domain="localhost"
+)
 
 if __name__ == "__main__":
     uvicorn.run(app, host=config.web.host, port=config.web.port)
