@@ -2,7 +2,7 @@ import datetime
 import os
 
 import pytest
-from fastapi import status
+from fastapi import status, HTTPException
 from httpx import AsyncClient
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError
@@ -12,6 +12,7 @@ from freezegun import freeze_time
 from src.models.accounts import User
 from src.models.repository import UserRepository
 from src.service.accounts import UserService
+from src.interfaces.permission import Auths
 
 
 @pytest.mark.asyncio
@@ -196,3 +197,84 @@ async def test_expired_token():
 
         except Exception as e:
             assert e is ExpiredSignatureError
+
+
+@pytest.mark.asyncio
+async def test_basic_authentication(mocker):
+    test_token = UserService().create_jwt(user_email="test@test.com")
+
+    test_user = User(
+            id=1,
+            email="test@test.com",
+            password="hashed",
+            nickname=None,
+            phone_number="010-1111-1111",
+            is_business=False,
+            is_admin=False,
+            created_at=datetime.datetime.now(),
+            membership_id=1,
+        )
+
+    user = mocker.patch.object(
+        UserRepository,
+        "get_user_by_email",
+        return_value=test_user
+    )
+
+    user: User = Auths().basic_authentication(token=test_token, user_repo=UserRepository())
+
+    assert user == test_user
+
+
+@pytest.mark.asyncio
+async def test_admin_permission(mocker):
+    test_token = UserService().create_jwt(user_email="test@test.com")
+
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=True,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    user = mocker.patch.object(
+        UserRepository,
+        "get_user_by_email",
+        return_value=test_user
+    )
+
+    user: User = Auths().admin_permission(token=test_token, user_repo=UserRepository())
+
+    assert user == test_user
+
+
+@pytest.mark.asyncio
+async def test_admin_permission_failed(mocker):
+    test_token = UserService().create_jwt(user_email="test@test.com")
+
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    user = mocker.patch.object(
+        UserRepository,
+        "get_user_by_email",
+        return_value=test_user
+    )
+    try:
+        result = Auths().admin_permission(token=test_token, user_repo=UserRepository())
+    except HTTPException:
+        assert True

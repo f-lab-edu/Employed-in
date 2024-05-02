@@ -3,7 +3,7 @@ import bcrypt
 
 from datetime import datetime, timedelta
 from jose import jwt
-from jose.exceptions import ExpiredSignatureError
+from jose.exceptions import ExpiredSignatureError, JWTError
 from fastapi import HTTPException
 
 
@@ -43,5 +43,8 @@ class UserService:
 
         except ExpiredSignatureError:
             raise HTTPException(status_code=401, detail="Token expired")
+
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid token")
 
         return payload["sub"]

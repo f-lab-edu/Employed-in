@@ -14,7 +14,8 @@ def get_access_token(auth_header: HTTPAuthorizationCredentials | None = Depends(
     return auth_header.credentials
 
 
-class Authentications:
+class Auths:
+    @staticmethod
     def basic_authentication(token: str, user_repo: UserRepository) -> User:
         verified = UserService().decode_jwt(access_token=token)
 
@@ -27,3 +28,12 @@ class Authentications:
             raise HTTPException(status_code=403, detail="No user")
 
         return user
+
+    def admin_permission(self, token: str, user_repo: UserRepository) -> User:
+        user: User = self.basic_authentication(token=token, user_repo=user_repo)
+
+        if not user.is_admin:
+            raise HTTPException(status_code=403, detail="Only admin user allowed")
+
+        return user
+

@@ -10,7 +10,7 @@ from src.models.accounts import User
 from src.models.profile import Profile, Country
 from src.models.repository import ProfileRepository, UserRepository
 from src.service.accounts import UserService
-from src.interfaces.permission import Authentications
+from src.interfaces.permission import Auths
 
 
 @pytest.mark.asyncio
@@ -37,7 +37,7 @@ async def test_create_profile_successfully(client: AsyncClient, session: AsyncSe
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_profile_validation = mocker.patch.object(
@@ -144,7 +144,7 @@ async def test_profile_list_successfully(client: AsyncClient, session: AsyncSess
     ]
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_profiles = mocker.patch.object(
@@ -216,7 +216,7 @@ async def test_get_profile_successfully(client: AsyncClient, session: AsyncSessi
         ), "International")
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_profiles = mocker.patch.object(
@@ -257,7 +257,7 @@ async def test_get_profile_fail_invalid_id(client: AsyncClient, session: AsyncSe
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     response = await client.get(
@@ -307,7 +307,7 @@ async def test_update_profile_successfully(client: AsyncClient, session: AsyncSe
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_profiles = mocker.patch.object(
@@ -364,7 +364,7 @@ async def test_update_profile_fail_without_id(client: AsyncClient, session: Asyn
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     response = await client.patch(
@@ -401,7 +401,7 @@ async def test_update_profile_fail_invalid_id(client: AsyncClient, session: Asyn
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     response = await client.patch(
@@ -439,7 +439,7 @@ async def test_delete_profile_successfully(client: AsyncClient, session: AsyncSe
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mock_profile = Profile(
@@ -453,7 +453,7 @@ async def test_delete_profile_successfully(client: AsyncClient, session: AsyncSe
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_profile = mocker.patch.object(
@@ -498,7 +498,7 @@ async def test_delete_profile_fail_invalid_id(client: AsyncClient, session: Asyn
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     response = await client.delete(
