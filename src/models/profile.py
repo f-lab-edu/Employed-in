@@ -22,8 +22,6 @@ class UserCareer(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     career_id: int = Field(foreign_key="career.id")
 
-    careers: list["Career"] = Relationship(back_populates="career")
-
 
 class UserSkill(SQLModel, table=True):
     __table_args__ = (
@@ -106,4 +104,4 @@ class Career(SQLModel, table=True):
     enterprise_id: int = Field(foreign_key="enterprise.id")
     employment_type_id: int = Field(foreign_key="employmenttype.id")
 
-    career: Optional[UserCareer] = Relationship(back_populates="careers")
+    users: list["User"] = Relationship(back_populates="careers", link_model=UserCareer)
