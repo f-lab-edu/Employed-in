@@ -61,6 +61,8 @@ class ProfileRepository:
     def get_country_list(self) -> list[Country]:
         return list(self.session.execute(select(Country)))
 
+
+class SkillRepository:
     def register_new_skill(self, skill: Skill) -> Skill:
         self.session.add(instance=skill)
         self.session.commit()

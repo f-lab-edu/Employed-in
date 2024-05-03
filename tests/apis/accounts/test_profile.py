@@ -8,7 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.models.accounts import User
 from src.models.profile import Profile, Country, Skill, UserSkill
-from src.models.repository import ProfileRepository, UserRepository
+from src.models.repository import ProfileRepository, UserRepository, SkillRepository
 from src.service.accounts import UserService
 from src.interfaces.permission import Auths
 
@@ -597,11 +597,11 @@ async def test_register_exist_skill_successfully(client: AsyncClient, session: A
     )
 
     mocker_new_skill = mocker.patch.object(
-        ProfileRepository, "register_new_skill", return_value=test_skill
+        SkillRepository, "register_new_skill", return_value=test_skill
     )
 
     mocker_relation = mocker.patch.object(
-        ProfileRepository, "register_user_skill", return_value=test_relation
+        SkillRepository, "register_user_skill", return_value=test_relation
     )
 
     response = await client.post(
@@ -651,11 +651,11 @@ async def test_register_new_skill_successfully(client: AsyncClient, session: Asy
     )
 
     mocker_new_skill = mocker.patch.object(
-        ProfileRepository, "skill_validation", return_value=True
+        SkillRepository, "skill_validation", return_value=True
     )
 
     mocker_relation = mocker.patch.object(
-        ProfileRepository, "register_user_skill", return_value=test_relation
+        SkillRepository, "register_user_skill", return_value=test_relation
     )
 
     response = await client.post(
@@ -706,11 +706,11 @@ async def test_register_invalid_skill_id_fail(client: AsyncClient, session: Asyn
     )
 
     mocker_new_skill = mocker.patch.object(
-        ProfileRepository, "skill_validation", return_value=False
+        SkillRepository, "skill_validation", return_value=False
     )
 
     mocker_relation = mocker.patch.object(
-        ProfileRepository, "register_user_skill", return_value=test_relation
+        SkillRepository, "register_user_skill", return_value=test_relation
     )
 
     response = await client.post(
@@ -765,7 +765,7 @@ async def test_all_skill_list_successfully(client: AsyncClient, session: AsyncSe
     )
 
     mocker_new_skill = mocker.patch.object(
-        ProfileRepository, "get_all_skill_list", return_value=test_skills
+        SkillRepository, "get_all_skill_list", return_value=test_skills
     )
 
     response = await client.get(
@@ -842,7 +842,7 @@ async def test_registered_skill_list_successfully(client: AsyncClient, session: 
     )
 
     mocker_new_skill = mocker.patch.object(
-        ProfileRepository, "filter_user_skill", return_value=test_skills
+        SkillRepository, "filter_user_skill", return_value=test_skills
     )
 
     response = await client.get(
@@ -899,11 +899,11 @@ async def test_registered_skill_delete_successfully(client: AsyncClient, session
     )
 
     mocker_relation = mocker.patch.object(
-        ProfileRepository, "get_registered_relation", return_value=test_relation
+        SkillRepository, "get_registered_relation", return_value=test_relation
     )
 
     mocker_relation = mocker.patch.object(
-        ProfileRepository, "delete_registered_skill", return_value=test_relation
+        SkillRepository, "delete_registered_skill", return_value=test_relation
     )
 
     response = await client.delete(

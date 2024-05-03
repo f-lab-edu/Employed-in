@@ -4,7 +4,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.models.profile import Profile, Country, Skill, UserSkill
 from src.models.accounts import User
 from src.service.accounts import UserService
-from src.models.repository import ProfileRepository, UserRepository
+from src.models.repository import ProfileRepository, UserRepository, SkillRepository
 from src.schema.request import CreateProfileRequest, RegisterSkillRequest
 
 from src.schema.response import CreateProfileResponse, GetProfileResponse, GetCountryResponse, RegisterSkillResponse, SkillResponse
@@ -151,12 +151,12 @@ def register_skill_handler(
         request: RegisterSkillRequest,
         token: str = Depends(get_access_token),
         user_repo: UserRepository = Depends(),
-        profile_repo: ProfileRepository = Depends()
+        skill_repo: SkillRepository = Depends()
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
     if request.id is not None:
-        if not profile_repo.skill_validation(skill_id=request.id, skill_name=request.name):
+        if not skill_repo.skill_validation(skill_id=request.id, skill_name=request.name):
             raise HTTPException(status_code=400, detail="Skill id and name is not match")
 
         relation = UserSkill(user_id=user.id, skill_id=request.id)
@@ -164,11 +164,11 @@ def register_skill_handler(
     else:
         skill = Skill(name=request.name)
 
-        new_skill: Skill = profile_repo.register_new_skill(skill)
+        new_skill: Skill = skill_repo.register_new_skill(skill)
 
         relation = UserSkill(user_id=user.id, skill_id=new_skill.id)
 
-    new_relation: UserSkill = profile_repo.register_user_skill(user_skill=relation)
+    new_relation: UserSkill = skill_repo.register_user_skill(user_skill=relation)
 
     return RegisterSkillResponse(message="Skill is registered")
 
@@ -176,11 +176,11 @@ def register_skill_handler(
 def get_skill_list_handler(
         token: str = Depends(get_access_token),
         user_repo: UserRepository = Depends(),
-        profile_repo: ProfileRepository = Depends()
+        skill_repo: SkillRepository = Depends()
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    skill_list: list[Skill] = profile_repo.get_all_skill_list()
+    skill_list: list[Skill] = skill_repo.get_all_skill_list()
 
     return sorted(
         [
@@ -197,11 +197,11 @@ def get_skill_list_handler(
 def filter_registered_skill_handler(
         token: str = Depends(get_access_token),
         user_repo: UserRepository = Depends(),
-        profile_repo: ProfileRepository = Depends()
+        skill_repo: SkillRepository = Depends()
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    skill_list: list[(UserSkill, Skill)] = profile_repo.filter_user_skill(user_id=user.id)
+    skill_list: list[(UserSkill, Skill)] = skill_repo.filter_user_skill(user_id=user.id)
 
     return sorted(
         [
@@ -219,10 +219,10 @@ def delete_registered_skill_handler(
         skill_id: int,
         token: str = Depends(get_access_token),
         user_repo: UserRepository = Depends(),
-        profile_repo: ProfileRepository = Depends()
+        skill_repo: SkillRepository = Depends()
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    relation: UserSkill = profile_repo.delete_registered_skill(user_id=user.id, skill_id=skill_id)
+    relation: UserSkill = skill_repo.delete_registered_skill(user_id=user.id, skill_id=skill_id)
 
     return RegisterSkillResponse(message="Skill is deleted")
