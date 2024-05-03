@@ -1,10 +1,10 @@
 from fastapi import Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from src.database import get_db
 from src.models.accounts import User
-from src.models.profile import Profile, UserCareer, Career, Country, Skill, UserSkill
+from src.models.profile import Profile, UserCareer, Career, Country, Skill, UserSkill, Enterprise, EmploymentType
 
 
 class UserRepository:
@@ -63,6 +63,9 @@ class ProfileRepository:
 
 
 class SkillRepository:
+    def __init__(self, session: Session = Depends(get_db)):
+        self.session = session
+
     def register_new_skill(self, skill: Skill) -> Skill:
         self.session.add(instance=skill)
         self.session.commit()
@@ -86,7 +89,7 @@ class SkillRepository:
     def get_registered_relation(self, user_id: int, skill_id: int) -> UserSkill:
         return self.session.execute(select(UserSkill).where(UserSkill.user_id == user_id, UserSkill.skill_id == skill_id)).fetchone()[0]
 
-    def filter_user_skill(self, user_id: int) -> list[(Profile, Skill)]:
+    def filter_user_skill(self, user_id: int) -> list[(UserSkill, Skill)]:
         return list(self.session.execute(select(UserSkill, Skill).join(Skill).where(UserSkill.user_id == user_id)))
 
     def delete_registered_skill(self, user_id: int, skill_id: int) -> UserSkill:
@@ -97,4 +100,52 @@ class SkillRepository:
 
         self.session.delete(relation)
         self.session.commit()
+        return relation
+
+
+class CareerRepository:
+    def __init__(self, session: Session = Depends(get_db)):
+        self.session = session
+
+    def register_new_career(self, career: Career) -> Career:
+        self.session.add(instance=career)
+        self.session.commit()
+        self.session.refresh(instance=career)
+        return career
+
+    def register_user_skill(self, user_career: UserCareer) -> UserCareer:
+        self.session.add(instance=user_career)
+        self.session.commit()
+        self.session.refresh(instance=user_career)
+        return user_career
+
+    def get_career_by_id(self, career_id: int) -> Career:
+        result: Career = self.session.execute(select(Career).where(Career.id == career_id))
+
+        if not result:
+            raise HTTPException(status_code=400, detail='Invalid career id')
+
+        return result
+
+    def get_registered_relation(self, user_id: int, career_id: int) -> UserCareer:
+        return self.session.execute(
+            select(UserCareer).where(UserCareer.user_id == user_id, UserCareer.career_id == career_id)).fetchone()[0]
+
+    def filter_user_career(self, user_id: int) -> list:
+        statement = "select usercareer.id, career.position, career.description, career.start_time, career.end_time, career.employment_type_id, enterprise.name from usercareer inner join career on career.id=usercareer.career_id inner join enterprise on enterprise.id=career.enterprise_id where usercareer.user_id=:user_id;"
+
+        return list(self.session.execute(text(statement), {"user_id": user_id}).mappings().fetchall())
+
+    def delete_career(self, user_id: int, career_id: int) -> UserCareer:
+        relation: UserCareer = self.get_registered_relation(user_id=user_id, career_id=career_id)
+
+        if not relation:
+            raise HTTPException(status_code=400, detail="Skill id is not registered")
+
+        career: Career = self.get_career_by_id(career_id=career_id)
+
+        self.session.delete(career)
+        self.session.delete(relation)
+        self.session.commit()
+
         return relation
