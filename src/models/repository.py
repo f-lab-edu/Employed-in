@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from src.database import get_db
 from src.models.accounts import User
-from src.models.profile import Profile, UserCareer, Career, Country, Skill, UserSkill, Enterprise, EmploymentType
+from src.models.profile import Profile, UserCareer, Career, Country, Skill, UserSkill, UserEducation, Education
 
 
 class UserRepository:
@@ -145,6 +145,54 @@ class CareerRepository:
         career: Career = self.get_career_by_id(career_id=career_id)
 
         self.session.delete(career)
+        self.session.delete(relation)
+        self.session.commit()
+
+        return relation
+
+
+class EducationRepository:
+    def __init__(self, session: Session = Depends(get_db)):
+        self.session = session
+
+    def register_new_education(self, education: Education) -> Education:
+        self.session.add(instance=education)
+        self.session.commit()
+        self.session.refresh(instance=education)
+        return education
+
+    def register_user_education(self, user_education: UserEducation) -> UserEducation:
+        self.session.add(instance=user_education)
+        self.session.commit()
+        self.session.refresh(instance=user_education)
+        return user_education
+
+    def get_education_by_id(self, education_id: int) -> Education:
+        result: Education = self.session.execute(select(Education).where(Education.id == education_id))
+
+        if not result:
+            raise HTTPException(status_code=400, detail='Invalid career id')
+
+        return result
+
+    def get_registered_relation(self, user_id: int, education_id: int) -> UserEducation:
+        return self.session.execute(
+            select(UserEducation).where(UserEducation.user_id == user_id, UserEducation.education_id == education_id)).fetchone()[0]
+
+    def filter_user_education(self, user_id: int) -> list:
+        statement = "select usereducation.id as id, education.major, education.start_time, education.end_time, education.degree_type, education.grade, education.description, enterprise.name from usereducation inner join education on education.id=usereducation.education_id inner join enterprise on enterprise.is=education.enterprise_id where usercareer.user_id=:user_id;"
+
+        return list(self.session.execute(text(statement), {"user_id": user_id}).mappings().fetchall())
+
+    def delete_education(self, user_id: int, education_id: int) -> UserEducation:
+        relation: UserEducation = self.get_registered_relation(user_id=user_id, education_id=education_id)
+
+        if not relation:
+            raise HTTPException(status_code=400, detail="Skill id is not registered")
+
+        education: Education = self.get_education_by_id(education_id=education_id)
+
+        self.session.delete(education)
         self.session.delete(relation)
         self.session.commit()
 

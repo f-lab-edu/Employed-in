@@ -82,6 +82,7 @@ class Education(SQLModel, table=True):
     start_time: datetime.datetime = Field()
     graduate_time: datetime.datetime = Field(nullable=True, default=None)
     grade: str = Field(nullable=True, max_length=10)
+    degree_type: str = Field(max_length=20)
     description: str = Field(nullable=True, max_length=45)
     enterprise_id: int = Field(foreign_key="enterprise.id")
 
