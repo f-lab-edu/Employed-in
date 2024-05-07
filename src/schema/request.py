@@ -7,10 +7,10 @@ from pydantic import BaseModel, EmailStr, field_validator, constr, conint
 
 class SignUpRequest(BaseModel):
     email: EmailStr
-    phone_number: constr(max_length=25)
+    phone_number: constr(max_length=25, pattern=r"^[0-9\-]")
     confirm_password: str
     password: str
-    nickname: Optional[constr(max_length=10)] = None
+    nickname: Optional[constr(max_length=10, pattern=r"^[a-zA-Z가-힣]+")] = None
     is_business: Optional[bool] = False
     membership_id: Optional[int] = 1
 
@@ -55,10 +55,10 @@ class LoginRequest(BaseModel):
 
 
 class CreateProfileRequest(BaseModel):
-    name: Optional[constr(max_length=30)] = None
-    occupation: Optional[constr(max_length=30)] = None
-    personal_description: Optional[constr(max_length=255)] = None
-    region: Optional[constr(max_length=50)] = None
+    name: Optional[constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")] = None
+    occupation: Optional[constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")] = None
+    personal_description: Optional[constr(max_length=255,pattern=r"^[a-zA-Z가-힣]+")] = None
+    region: Optional[constr(max_length=50, pattern=r"^[a-zA-Z가-힣]+")] = None
     country_id: int
     profile_id: Optional[int] = None
 
