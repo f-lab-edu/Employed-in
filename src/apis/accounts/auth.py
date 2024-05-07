@@ -22,6 +22,7 @@ def user_sign_up_handler(
         nickname=request.nickname,
         phone_number=request.phone_number,
         is_business=request.is_business,
+        is_admin=False,
         membership_id=request.membership_id,
     )
     user: User = user_repo.create_user(user=user)

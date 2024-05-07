@@ -2,14 +2,17 @@ import datetime
 import os
 
 import pytest
-from fastapi import status
+from fastapi import status, HTTPException
 from httpx import AsyncClient
 from jose import jwt
+from jose.exceptions import ExpiredSignatureError
 from sqlmodel.ext.asyncio.session import AsyncSession
+from freezegun import freeze_time
 
 from src.models.accounts import User
 from src.models.repository import UserRepository
 from src.service.accounts import UserService
+from src.interfaces.permission import Auths
 
 
 @pytest.mark.asyncio
@@ -20,7 +23,7 @@ async def test_signup_successfully(client: AsyncClient, session: AsyncSession, m
 
     test_user = User(
         id=None,
-        email="test@test.com",
+        email="unittest@test.com",
         password="hashed",
         nickname=None,
         phone_number="010-1111-1111",
@@ -39,7 +42,7 @@ async def test_signup_successfully(client: AsyncClient, session: AsyncSession, m
     response = await client.post(
         url="/account/signup",
         json={
-            "email": "test@test.com",
+            "email": "unittest@test.com",
             "password": "Plain123!",
             "confirm_password": "Plain123!",
             "phone_number": "010-1111-1111",
@@ -49,7 +52,7 @@ async def test_signup_successfully(client: AsyncClient, session: AsyncSession, m
 
     token = jwt.encode(
         {
-            "sub": "test@test.com",
+            "sub": "unittest@test.com",
             "exp": datetime.datetime.now() + datetime.timedelta(days=7),
         },
         os.getenv("SECRET_KEY"),
@@ -143,7 +146,7 @@ async def test_login_successfully(client: AsyncClient, session: AsyncSession, mo
 @pytest.mark.asyncio
 async def test_login_no_user_case(client: AsyncClient, session: AsyncSession, mocker):
     response = await client.post(
-        url="/account/login", json={"email": "test@test.com", "password": "Plain123!"}
+        url="/account/login", json={"email": "nouser@test.com", "password": "Plain123!"}
     )
 
     data = response.json()
@@ -182,3 +185,96 @@ async def test_login_wrong_password_case(
 
     assert response.status_code == 401
     assert data == {"detail": "Invalid password"}
+
+
+@pytest.mark.asyncio
+async def test_expired_token():
+    exp_token = UserService().create_jwt(user_email="exptest@exptest.com")
+
+    with freeze_time(datetime.datetime.now() + datetime.timedelta(days=7)):
+        try:
+            UserService().decode_jwt(access_token=exp_token)
+
+        except Exception as e:
+            assert e is ExpiredSignatureError
+
+
+@pytest.mark.asyncio
+async def test_basic_authentication(mocker):
+    test_token = UserService().create_jwt(user_email="test@test.com")
+
+    test_user = User(
+            id=1,
+            email="test@test.com",
+            password="hashed",
+            nickname=None,
+            phone_number="010-1111-1111",
+            is_business=False,
+            is_admin=False,
+            created_at=datetime.datetime.now(),
+            membership_id=1,
+        )
+
+    user = mocker.patch.object(
+        UserRepository,
+        "get_user_by_email",
+        return_value=test_user
+    )
+
+    user: User = Auths().basic_authentication(token=test_token, user_repo=UserRepository())
+
+    assert user == test_user
+
+
+@pytest.mark.asyncio
+async def test_admin_permission(mocker):
+    test_token = UserService().create_jwt(user_email="test@test.com")
+
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=True,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    user = mocker.patch.object(
+        UserRepository,
+        "get_user_by_email",
+        return_value=test_user
+    )
+
+    user: User = Auths().admin_permission(token=test_token, user_repo=UserRepository())
+
+    assert user == test_user
+
+
+@pytest.mark.asyncio
+async def test_admin_permission_failed(mocker):
+    test_token = UserService().create_jwt(user_email="test@test.com")
+
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    user = mocker.patch.object(
+        UserRepository,
+        "get_user_by_email",
+        return_value=test_user
+    )
+    try:
+        result = Auths().admin_permission(token=test_token, user_repo=UserRepository())
+    except HTTPException:
+        assert True

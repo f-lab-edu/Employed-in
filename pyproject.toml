@@ -15,6 +15,11 @@ greenlet = "^3.0.2"
 python-jose = "^3.3.0"
 email-validator = "^2.1.1"
 pytest-mock = "^3.14.0"
+aiomysql = "^0.2.0"
+bcrypt = "^4.1.2"
+pytest-asyncio = "^0.23.6"
+freezegun = "^1.5.0"
+starlette-csrf = "^3.0.0"
 
 
 [tool.poetry.group.dev.dependencies]

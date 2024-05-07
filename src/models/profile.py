@@ -1,14 +1,77 @@
 import datetime
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, Relationship
+from sqlalchemy import UniqueConstraint
+from typing import Optional
 
 
-class UserProfile(SQLModel, table=True):
+class EnterpriseType(SQLModel, table=True):
     id: int = Field(primary_key=True)
-    personal_description: str = Field(nullable=True, max_length=255)
-    language_id: int = Field(foreign_key="language.id")
+    name: str = Field(max_length=100)
+    degree_type: str = Field(nullable=True, default=None, max_length=20)
+
+
+class Industry(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    name: str = Field(max_length=100)
+
+
+class Country(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    name: str = Field(max_length=100)
+
+    profiles: list["Profile"] = Relationship(back_populates="country")
+
+
+class Skill(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    name: str = Field(max_length=30)
+
+
+class EmploymentType(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    name: str = Field(max_length=20)
+
+
+class UserEducation(SQLModel, table=True):
+    id: int = Field(primary_key=True)
     user_id: int = Field(foreign_key="user.id")
-    skill_id:  int = Field(foreign_key="skill.id", nullable=True, default=None)
+    education_id: int = Field(foreign_key="education.id")
+
+
+class UserEnterprise(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    enterprise_id: int = Field(foreign_key="enterprise.id")
+
+
+class UserCareer(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    career_id: int = Field(foreign_key="career.id")
+
+    careers: list["Career"] = Relationship(back_populates="career")
+
+
+class UserSkill(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    skill_id: int = Field(foreign_key="skill.id")
+
+
+class Profile(SQLModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("country_id", "user_id", name="profile_uq"),
+    )
+    id: int = Field(primary_key=True)
+    name: str = Field(nullable=True, max_length=30)
+    occupation: str = Field(nullable=True, max_length=30)
+    personal_description: str = Field(nullable=True, max_length=255)
+    region: str = Field(nullable=True, max_length=50)
+    country_id: int = Field(foreign_key="country.id")
+    user_id: int = Field(foreign_key="user.id")
+
+    country: Country | None = Relationship(back_populates="profiles")
 
 
 class Education(SQLModel, table=True):
@@ -19,7 +82,6 @@ class Education(SQLModel, table=True):
     grade: str = Field(nullable=True, max_length=10)
     description: str = Field(nullable=True, max_length=45)
     enterprise_id: int = Field(foreign_key="enterprise.id")
-    userprofile_id: int = Field(foreign_key="userprofile.id")
 
 
 class Enterprise(SQLModel, table=True):
@@ -39,38 +101,5 @@ class Career(SQLModel, table=True):
     end_time: datetime.datetime = Field(nullable=True, default=None)
     enterprise_id: int = Field(foreign_key="enterprise.id")
     employment_type_id: int = Field(foreign_key="employmenttype.id")
-    user_profile_id: int = Field(foreign_key="userprofile.id")
-    skill_id: int = Field(foreign_key="skill.id")
 
-
-class EnterpriseType(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str = Field(max_length=100)
-    degree_type: str = Field(nullable=True, default=None, max_length=20)
-
-
-class Language(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str = Field(max_length=50)
-
-
-class Industry(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str = Field(max_length=100)
-
-
-class Country(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str = Field(max_length=100)
-
-
-class Skill(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str = Field(max_length=30)
-
-
-class EmploymentType(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str = Field(max_length=20)
-
-
+    career: Optional[UserCareer] = Relationship(back_populates="careers")

@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src import config
-from src.models import post, accounts, profile
+from src.models import accounts, profile
 
 async_engine = create_async_engine(
     url=config.db.async_url,
