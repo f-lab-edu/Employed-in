@@ -1,14 +1,14 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod, ABCMeta, ABC
 
 from src.database import get_db
 from src.models.accounts import User
 from src.models.profile import Profile, UserCareer, Career, Country, Skill, UserSkill, UserEducation, Education
 
 
-class BaseRepository(metaclass=ABCMeta):
+class BaseRepository(ABC):
     def __init__(self, session: Session = Depends(get_db)):
         self.session = session
 
@@ -38,17 +38,12 @@ class BaseRepository(metaclass=ABCMeta):
 
 
 class UserRepository(BaseRepository):
-    def __init__(self):
-        super(UserRepository, self).__init__()
 
     def get_user_by_email(self, user_email: str) -> User | None:
         return self.session.scalar(select(User).where(User.email == user_email))
 
 
 class ProfileRepository(BaseRepository):
-
-    def __init__(self):
-        super(ProfileRepository, self).__init__()
 
     def profile_validation(self, user_id: int, country_id: int) -> bool:
         exists = self.session.scalar(select(Profile).where(Profile.user_id ==user_id, Profile.country_id == country_id))
@@ -71,8 +66,6 @@ class ProfileRepository(BaseRepository):
 
 
 class SkillRepository(BaseRepository):
-    def __init__(self):
-        super(SkillRepository, self).__init__()
 
     def skill_validation(self, skill_id: int, skill_name: str) -> bool:
         result: Skill = self.session.execute(select(Skill).where(Skill.id == skill_id)).fetchone()[0]
@@ -84,8 +77,6 @@ class SkillRepository(BaseRepository):
 
 
 class CareerRepository(BaseRepository):
-    def __init__(self):
-        super(CareerRepository, self).__init__()
 
     def filter_user_career(self, user_id: int) -> list:
         statement = "select usercareer.id, career.position, career.description, career.start_time, career.end_time, career.employment_type_id, enterprise.name from usercareer inner join career on career.id=usercareer.career_id inner join enterprise on enterprise.id=career.enterprise_id where usercareer.user_id=:user_id;"
@@ -94,8 +85,6 @@ class CareerRepository(BaseRepository):
 
 
 class EducationRepository(BaseRepository):
-    def __init__(self):
-        super(EducationRepository, self).__init__()
 
     def get_obj_by_id(self, education_id: int) -> Education:
         result: Education = self.session.execute(select(Education).where(Education.id == education_id))

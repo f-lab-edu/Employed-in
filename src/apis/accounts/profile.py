@@ -31,7 +31,7 @@ def profile_create_handler(
         country_id=request.country_id,
         user_id=user.id
     )
-    profile: Profile = profile_repo.create_profile(new_profile)
+    profile: Profile = profile_repo.add_object(new_profile)
 
     return CreateProfileResponse(message="New profile created", data=profile)
 
@@ -43,7 +43,7 @@ def profile_lists_handler(
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    profiles: list[(Profile, Country)] = profile_repo.filter_profile_by_user(user_id=user.id)
+    profiles: list[(Profile, Country)] = profile_repo.filter_obj(user_id=user.id)
 
     return sorted(
         [
@@ -69,7 +69,7 @@ def profile_handler(
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    profile, country = profile_repo.get_profile_by_id(profile_id=profile_id, user_id=user.id)
+    profile, country = profile_repo.get_obj_by_id(profile_id=profile_id, user_id=user.id)
 
     if not profile:
         raise HTTPException(status_code=400, detail="Invalid profile id")
@@ -96,7 +96,7 @@ def update_profile_handler(
     if not request.profile_id:
         raise HTTPException(status_code=400, detail='profile id missed')
 
-    profile, country = profile_repo.get_profile_by_id(profile_id=request.profile_id, user_id=user.id)
+    profile, country = profile_repo.get_obj_by_id(profile_id=request.profile_id, user_id=user.id)
 
     if not profile:
         raise HTTPException(status_code=400, detail='Invalid profile id')
@@ -107,7 +107,7 @@ def update_profile_handler(
     profile.region = request.region
     profile.country_id = request.country_id
 
-    profile: Profile = profile_repo.create_profile(profile)
+    profile: Profile = profile_repo.add_object(profile)
 
     return CreateProfileResponse(message="Profile updated", data=profile)
 
@@ -121,7 +121,9 @@ def delete_profile_handler(
 
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    profile: Profile | None = profile_repo.delete_profile(profile_id=profile_id, user_id=user.id)
+    profile, country = profile_repo.get_obj_by_id(profile_id=profile_id, user_id=user.id)
+
+    profile: Profile | None = profile_repo.delete_object(obj=profile)
 
     return CreateProfileResponse(message="Profile deleted", data=profile)
 
@@ -164,11 +166,11 @@ def register_skill_handler(
     else:
         skill = Skill(name=request.name)
 
-        new_skill: Skill = skill_repo.register_new_skill(skill)
+        new_skill: Skill = skill_repo.add_object(skill)
 
         relation = UserSkill(user_id=user.id, skill_id=new_skill.id)
 
-    new_relation: UserSkill = skill_repo.register_user_skill(user_skill=relation)
+    new_relation: UserSkill = skill_repo.add_object(obj=relation)
 
     return RegisterSkillResponse(message="Skill is registered")
 
@@ -180,7 +182,7 @@ def get_skill_list_handler(
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    skill_list: list[Skill] = skill_repo.get_all_skill_list()
+    skill_list: list[Skill] = skill_repo.get_all_obj(obj=Skill)
 
     return sorted(
         [
@@ -223,6 +225,8 @@ def delete_registered_skill_handler(
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    relation: UserSkill = skill_repo.delete_registered_skill(user_id=user.id, skill_id=skill_id)
+    relation: UserSkill = skill_repo.get_relation_obj(UserSkill, User, Skill, user.id, skill_id)
+
+    deleted_relation: UserSkill = skill_repo.delete_object(relation)
 
     return RegisterSkillResponse(message="Skill is deleted")

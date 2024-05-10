@@ -25,7 +25,7 @@ def user_sign_up_handler(
         is_admin=False,
         membership_id=request.membership_id,
     )
-    user: User = user_repo.create_user(user=user)
+    user: User = user_repo.add_object(obj=user)
     token: str = user_service.create_jwt(user.email)
 
     return JWTResponse(access_token=token)

@@ -35,7 +35,7 @@ async def test_signup_successfully(client: AsyncClient, session: AsyncSession, m
 
     new_user = mocker.patch.object(
         UserRepository,
-        "create_user",
+        "add_object",
         return_value=test_user,
     )
 

@@ -45,7 +45,7 @@ async def test_create_profile_successfully(client: AsyncClient, session: AsyncSe
     )
 
     mocker_new_profile = mocker.patch.object(
-        ProfileRepository, "create_profile", return_value=test_profile
+        ProfileRepository, "add_object", return_value=test_profile
     )
 
     response = await client.post(
@@ -148,7 +148,7 @@ async def test_profile_list_successfully(client: AsyncClient, session: AsyncSess
     )
 
     mocker_profiles = mocker.patch.object(
-        ProfileRepository, "filter_profile_by_user", return_value=mock_profiles
+        ProfileRepository, "filter_obj", return_value=mock_profiles
     )
 
     response = await client.get(
@@ -220,7 +220,7 @@ async def test_get_profile_successfully(client: AsyncClient, session: AsyncSessi
     )
 
     mocker_profiles = mocker.patch.object(
-        ProfileRepository, "get_profile_by_id", return_value=mock_profile
+        ProfileRepository, "get_obj_by_id", return_value=mock_profile
     )
 
     response = await client.get(
@@ -311,11 +311,11 @@ async def test_update_profile_successfully(client: AsyncClient, session: AsyncSe
     )
 
     mocker_profiles = mocker.patch.object(
-        ProfileRepository, "get_profile_by_id", return_value=mock_profile1
+        ProfileRepository, "get_obj_by_id", return_value=mock_profile1
     )
 
     mocker_new_profile = mocker.patch.object(
-        ProfileRepository, "create_profile", return_value=mock_profile2
+        ProfileRepository, "add_object", return_value=mock_profile2
     )
 
     response = await client.patch(
@@ -452,12 +452,21 @@ async def test_delete_profile_successfully(client: AsyncClient, session: AsyncSe
         user_id=1
     )
 
+    mock_country = Country(
+        id=1,
+        name="Josun"
+    )
+
     mocker_user = mocker.patch.object(
         Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_profile = mocker.patch.object(
-        ProfileRepository, "delete_profile", return_value=mock_profile
+        ProfileRepository, "get_obj_by_id", return_value=(mock_profile, mock_country)
+    )
+
+    mocker_profile = mocker.patch.object(
+        ProfileRepository, "delete_object", return_value=mock_profile
     )
 
     response = await client.delete(
@@ -539,7 +548,7 @@ async def test_country_list_successfully(client: AsyncClient, session: AsyncSess
     ]
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_profiles = mocker.patch.object(
@@ -593,15 +602,15 @@ async def test_register_exist_skill_successfully(client: AsyncClient, session: A
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
-    mocker_new_skill = mocker.patch.object(
-        SkillRepository, "register_new_skill", return_value=test_skill
-    )
+    #mocker_new_skill = mocker.patch.object(
+    #    SkillRepository, "add_object", return_value=test_skill
+    #)
 
     mocker_relation = mocker.patch.object(
-        SkillRepository, "register_user_skill", return_value=test_relation
+        SkillRepository, "add_object", side_effect=[test_skill, test_relation]
     )
 
     response = await client.post(
@@ -647,7 +656,7 @@ async def test_register_new_skill_successfully(client: AsyncClient, session: Asy
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_new_skill = mocker.patch.object(
@@ -655,7 +664,7 @@ async def test_register_new_skill_successfully(client: AsyncClient, session: Asy
     )
 
     mocker_relation = mocker.patch.object(
-        SkillRepository, "register_user_skill", return_value=test_relation
+        SkillRepository, "add_object", return_value=test_relation
     )
 
     response = await client.post(
@@ -702,7 +711,7 @@ async def test_register_invalid_skill_id_fail(client: AsyncClient, session: Asyn
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_new_skill = mocker.patch.object(
@@ -710,7 +719,7 @@ async def test_register_invalid_skill_id_fail(client: AsyncClient, session: Asyn
     )
 
     mocker_relation = mocker.patch.object(
-        SkillRepository, "register_user_skill", return_value=test_relation
+        SkillRepository, "add_object", return_value=test_relation
     )
 
     response = await client.post(
@@ -761,11 +770,11 @@ async def test_all_skill_list_successfully(client: AsyncClient, session: AsyncSe
     ]
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_new_skill = mocker.patch.object(
-        SkillRepository, "get_all_skill_list", return_value=test_skills
+        SkillRepository, "get_all_obj", return_value=test_skills
     )
 
     response = await client.get(
@@ -838,7 +847,7 @@ async def test_registered_skill_list_successfully(client: AsyncClient, session: 
     ]
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_new_skill = mocker.patch.object(
@@ -885,7 +894,7 @@ async def test_registered_skill_delete_successfully(client: AsyncClient, session
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     test_relation = UserSkill(
@@ -895,15 +904,15 @@ async def test_registered_skill_delete_successfully(client: AsyncClient, session
     )
 
     mocker_user = mocker.patch.object(
-        Authentications, "basic_authentication", return_value=test_user
+        Auths, "basic_authentication", return_value=test_user
     )
 
     mocker_relation = mocker.patch.object(
-        SkillRepository, "get_registered_relation", return_value=test_relation
+        SkillRepository, "get_relation_obj", return_value=test_relation
     )
 
     mocker_relation = mocker.patch.object(
-        SkillRepository, "delete_registered_skill", return_value=test_relation
+        SkillRepository, "delete_object", return_value=test_relation
     )
 
     response = await client.delete(
