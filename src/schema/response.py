@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import date
 
 from src.models.profile import Profile, Skill
 
@@ -33,3 +34,13 @@ class RegisterSkillResponse(BaseModel):
 class SkillResponse(BaseModel):
     id: int
     name: str
+
+
+class GetCareerResponse(BaseModel):
+    id: int
+    position: str
+    description: str
+    start_time: date
+    end_time: date | None
+    employment_type_id: int
+    enterprise_id: int

@@ -8,7 +8,7 @@ from src.models.accounts import User
 from src.models.profile import Profile, UserCareer, Career, Country, Skill, UserSkill, UserEducation, Education
 
 
-class BaseRepository(ABC):
+class BaseRepository:
     def __init__(self, session: Session = Depends(get_db)):
         self.session = session
 

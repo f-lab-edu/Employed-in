@@ -89,3 +89,39 @@ account_router.add_api_route(
     response_model=response.RegisterSkillResponse,
     status_code=status.HTTP_200_OK
 )
+account_router.add_api_route(
+    methods=["POST"],
+    path="/careers",
+    endpoint=profile.register_career_handler,
+    response_model=response.RegisterSkillResponse,
+    status_code=status.HTTP_201_CREATED
+)
+account_router.add_api_route(
+    methods=["GET"],
+    path="/careers",
+    endpoint=profile.get_career_list_handler,
+    response_model=list[response.GetCareerResponse],
+    status_code=status.HTTP_200_OK
+)
+account_router.add_api_route(
+    methods=["PATCH"],
+    path="/careers",
+    endpoint=profile.update_career_handler,
+    response_model=response.RegisterSkillResponse,
+    status_code=status.HTTP_201_CREATED
+)
+account_router.add_api_route(
+    methods=["DELETE"],
+    path="/careers/{career_id}",
+    endpoint=profile.delete_career_handler,
+    response_model=response.RegisterSkillResponse,
+    status_code=status.HTTP_200_OK
+)
+
+account_router.add_api_route(
+    methods=["POST"],
+    path="/enterprises",
+    endpoint=profile.register_new_enterprise_handler,
+    response_model=response.RegisterSkillResponse,
+    status_code=status.HTTP_201_CREATED
+)

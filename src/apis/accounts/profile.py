@@ -1,13 +1,13 @@
 from fastapi import HTTPException, Header, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from src.models.profile import Profile, Country, Skill, UserSkill
+from src.models.profile import Profile, Country, Skill, UserSkill, Career, UserCareer, Enterprise
 from src.models.accounts import User
 from src.service.accounts import UserService
-from src.models.repository import ProfileRepository, UserRepository, SkillRepository
-from src.schema.request import CreateProfileRequest, RegisterSkillRequest
+from src.models.repository import ProfileRepository, UserRepository, SkillRepository, CareerRepository
+from src.schema.request import CreateProfileRequest, RegisterSkillRequest, RegisterCareerRequest, CreateEnterpriseRequest
 
-from src.schema.response import CreateProfileResponse, GetProfileResponse, GetCountryResponse, RegisterSkillResponse, SkillResponse
+from src.schema.response import CreateProfileResponse, GetProfileResponse, GetCountryResponse, RegisterSkillResponse, SkillResponse, GetCareerResponse
 from src.interfaces.permission import get_access_token, Auths
 
 
@@ -230,3 +230,134 @@ def delete_registered_skill_handler(
     deleted_relation: UserSkill = skill_repo.delete_object(relation)
 
     return RegisterSkillResponse(message="Skill is deleted")
+
+
+def register_career_handler(
+        request: RegisterCareerRequest,
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        career_repo: CareerRepository = Depends()
+):
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    career = Career(
+        position=request.position,
+        description=request.description,
+        start_time=request.start_time,
+        end_time=request.end_time,
+        enterprise_id=request.enterprise_id,
+        employment_type_id=request.employment_type_id
+    )
+
+    new_career: Career = career_repo.add_object(career)
+
+    relation = UserCareer(
+        user_id=user.id,
+        career_id=new_career.id
+    )
+
+    relation: UserCareer = career_repo.add_object(relation)
+
+    return RegisterSkillResponse(message="career registered")
+
+
+def get_career_list_handler(
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        career_repo: CareerRepository = Depends()
+):
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    statement = f"select career.id, usercareer.id as relation_id, career.position, career.description, career.start_time, career.end_time, career.employment_type_id, career.enterprise_id from usercareer inner join career on career.id=usercareer.career_id where usercareer.user_id={user.id};"
+
+    careers = career_repo.raw_query(statement=statement)
+
+    return sorted(
+        [
+            GetCareerResponse(
+                id=career.id,
+                position=career.position,
+                description=career.description,
+                start_time=career.start_time,
+                end_time=career.end_time,
+                employment_type_id=career.employment_type_id,
+                enterprise_id=career.enterprise_id
+            )
+            for career in careers
+        ],
+        key=lambda career: career.id
+    )
+
+
+def update_career_handler(
+        request: RegisterCareerRequest,
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        career_repo: CareerRepository = Depends()
+):
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    career: Career = career_repo.get_obj_by_id(Career, request.id)
+
+    career.position = request.position
+    career.description = request.description
+    career.start_time = request.start_time
+    career.end_time = request.end_time
+    career.enterprise_id = request.enterprise_id
+    career.employment_type_id = request.employment_type_id
+
+    career: Career = career_repo.add_object(career)
+
+    return RegisterSkillResponse(message="career updated")
+
+
+def delete_career_handler(
+        career_id: int,
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        career_repo: CareerRepository = Depends()
+):
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    relation: UserCareer = career_repo.get_relation_obj(UserCareer, User, Career, user.id, career_id)
+
+    career: Career = career_repo.get_obj_by_id(Career, career_id)
+
+    deleted_relation: UserCareer = career_repo.delete_object(relation)
+
+    deleted_career: Career = career_repo.delete_object(career)
+
+    return RegisterSkillResponse(message="career deleted")
+
+
+def register_new_enterprise_handler(
+        request: CreateEnterpriseRequest,
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        career_repo: CareerRepository = Depends()
+):
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    enterprise = Enterprise(
+        name=request.name,
+        description=request.description,
+        enterprise_type_id=request.enterprise_type_id,
+        industry_id=request.industry_id,
+        country_id=request.country_id
+    )
+
+    new_enterprise: Enterprise = career_repo.add_object(enterprise)
+
+    return RegisterSkillResponse(message="enterprise registered")
+
+
+def enterprise_handler(
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        career_repo: CareerRepository = Depends()
+):
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    enterprises: list[Enterprise] = career_repo.get_all_obj(Enterprise)
+
+    return RegisterSkillResponse(message="query work")

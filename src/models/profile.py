@@ -34,7 +34,6 @@ class UserSkill(SQLModel, table=True):
 class EnterpriseType(SQLModel, table=True):
     id: int = Field(primary_key=True)
     name: str = Field(max_length=100)
-    degree_type: str = Field(nullable=True, default=None, max_length=20)
 
 
 class Industry(SQLModel, table=True):
