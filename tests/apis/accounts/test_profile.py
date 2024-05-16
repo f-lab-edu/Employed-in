@@ -2,13 +2,14 @@ import os
 import datetime
 import pytest
 
+from dateutil.relativedelta import relativedelta
 from fastapi import status
 from httpx import AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.models.accounts import User
-from src.models.profile import Profile, Country, Skill, UserSkill
-from src.models.repository import ProfileRepository, UserRepository, SkillRepository
+from src.models.profile import Profile, Country, Skill, UserSkill, Career, UserCareer, Enterprise, EnterpriseType, EmploymentType
+from src.models.repository import ProfileRepository, UserRepository, SkillRepository, CareerRepository
 from src.service.accounts import UserService
 from src.interfaces.permission import Auths
 
@@ -926,4 +927,271 @@ async def test_registered_skill_delete_successfully(client: AsyncClient, session
 
     assert data == {
         "message": "Skill is deleted"
+    }
+
+
+@pytest.mark.asyncio
+async def test_register_career_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    start_date = datetime.datetime.now().date() - relativedelta(months=6)
+
+    end_date = datetime.datetime.now().date() + relativedelta(months=6)
+
+    test_career = Career(
+        id=1,
+        position="Intern",
+        description="Lab Dog",
+        start_time=start_date,
+        end_time=end_date,
+        enterprise_id=1,
+        employment_type_id=1
+    )
+
+    test_relation = UserCareer(
+        id=1,
+        user_id=1,
+        career_id=1
+    )
+
+    mocker_user = mocker.patch.object(
+        Auths, "basic_authentication", return_value=test_user
+    )
+
+    mocker_relation = mocker.patch.object(
+        CareerRepository, "add_object", side_effect=[test_career, test_relation]
+    )
+
+    response = await client.post(
+        url="/account/careers",
+        headers={"Authorization": "Bearer test"},
+        json={
+            "position": "Intern",
+            "description": "Lab Dog",
+            "start_time": start_date.strftime("%Y-%m-%d"),
+            "end_time": end_date.strftime("%Y-%m-%d"),
+            "enterprise_id": 1,
+            "employment_type_id": 1
+        }
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+
+    data = response.json()
+
+    assert data == {
+        "message": "Career is registered"
+    }
+
+
+@pytest.mark.asyncio
+async def test_registered_career_list_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    date = datetime.datetime.now().date()
+
+    test_emp_types = [
+        (
+            EmploymentType(
+                id=1,
+                name="Intern"
+            ),
+        ),
+        (
+            EmploymentType(
+                id=2,
+                name="Manager"
+            ),
+        ),
+            (
+            EmploymentType(
+                id=3,
+                name="Emperor"
+            ),
+        )
+    ]
+
+    test_careers = [
+        (
+            UserCareer(
+                user_id=1,
+                career_id=1
+            ), Career(
+                id=1,
+                position="Intern",
+                description="Lab Dog",
+                start_time=date - relativedelta(years=3),
+                end_time=date - relativedelta(years=2),
+                enterprise_id=1,
+                employment_type_id=1
+            )
+        ),
+        (
+            UserCareer(
+                user_id=1,
+                career_id=2
+            ), Career(
+                id=2,
+                position="Manager",
+                description="Lab Dog Manager",
+                start_time=date - relativedelta(years=2),
+                end_time=date - relativedelta(years=1),
+                enterprise_id=1,
+                employment_type_id=2
+            )
+        ),
+        (
+            UserCareer(
+                user_id=1,
+                career_id=3
+            ), Career(
+                id=3,
+                position="Emperor",
+                description="Master of Mankind",
+                start_time=date - relativedelta(years=1),
+                end_time=None,
+                enterprise_id=1,
+                employment_type_id=3
+            )
+        )
+    ]
+
+    mocker_user = mocker.patch.object(
+        Auths, "basic_authentication", return_value=test_user
+    )
+
+    mocker_new_career = mocker.patch.object(
+        CareerRepository, "filter_user_career", return_value=test_careers
+    )
+
+    mocker_new_career = mocker.patch.object(
+        CareerRepository, "get_all_obj", return_value=test_emp_types
+    )
+
+    response = await client.get(
+        url="/account/careers",
+        headers={"Authorization": "Bearer test"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    data = response.json()
+
+    assert data == [
+        {
+            "id": 1,
+            "position": "Intern",
+            "description": "Lab Dog",
+            "start_time": (date - relativedelta(years=3)).strftime("%Y-%m-%d"),
+            "end_time": (date - relativedelta(years=2)).strftime("%Y-%m-%d"),
+            "employment_type_id" : 1,
+            "employment_type_name": "Intern",
+            "enterprise_id": 1
+        },
+        {
+            "id": 2,
+            "position": "Manager",
+            "description": "Lab Dog Manager",
+            "start_time": (date - relativedelta(years=2)).strftime("%Y-%m-%d"),
+            "end_time": (date - relativedelta(years=1)).strftime("%Y-%m-%d"),
+            "employment_type_id": 2,
+            "employment_type_name": "Manager",
+            "enterprise_id": 1
+        },
+        {
+            "id": 3,
+            "position": "Emperor",
+            "description": "Master of Mankind",
+            "start_time": (date - relativedelta(years=1)).strftime("%Y-%m-%d"),
+            "end_time": None,
+            "employment_type_id": 3,
+            "employment_type_name": "Emperor",
+            "enterprise_id": 1
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_registered_career_delete_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    mocker_user = mocker.patch.object(
+        Auths, "basic_authentication", return_value=test_user
+    )
+
+    test_relation = UserCareer(
+        id=1,
+        user_id=1,
+        career_id=1
+    )
+
+    date = datetime.datetime.now().date()
+
+    test_career = Career(
+                id=1,
+                position="Intern",
+                description="Lab Dog",
+                start_time=date - relativedelta(years=3),
+                end_time=date - relativedelta(years=2),
+                enterprise_id=1,
+                employment_type_id=1
+            )
+
+    mocker_user = mocker.patch.object(
+        Auths, "basic_authentication", return_value=test_user
+    )
+
+    mocker_relation = mocker.patch.object(
+        CareerRepository, "get_relation_obj", return_value=test_relation
+    )
+
+    mocker_relation = mocker.patch.object(
+        CareerRepository, "get_obj_by_id", return_value=(test_career, None)
+    )
+
+    mocker_relation = mocker.patch.object(
+        CareerRepository, "delete_object", side_effect=[test_relation, test_career]
+    )
+
+    response = await client.delete(
+        url="/account/careers/1",
+        headers={"Authorization": "Bearer test"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    data = response.json()
+
+    assert data == {
+        "message": "Career is deleted"
     }

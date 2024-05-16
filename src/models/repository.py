@@ -79,7 +79,7 @@ class SkillRepository(BaseRepository):
 class CareerRepository(BaseRepository):
 
     def filter_user_career(self, user_id: int) -> list:
-        statement = "select career.id, usercareer.id as relation_id, career.position, career.description, career.start_time, career.end_time, career.employment_type_id, career.enterprise_id, enterprise.name as enterprise_name from usercareer inner join career on career.id=usercareer.career_id inner join enterprise on enterprise.id=career.enterprise_id where usercareer.user_id=:user_id;"
+        statement = "select career.id, usercareer.id as relation_id, career.position, career.description, career.start_time, career.end_time, career.employment_type_id, career.enterprise_id from usercareer inner join career on career.id=usercareer.career_id where usercareer.user_id=:user_id;"
 
         return list(self.session.execute(text(statement), {"user_id": user_id}).mappings().fetchall())
 
@@ -87,6 +87,6 @@ class CareerRepository(BaseRepository):
 class EducationRepository(BaseRepository):
 
     def filter_user_education(self, user_id: int) -> list:
-        statement = "select usereducation.id as id, education.major, education.start_time, education.end_time, education.degree_type, education.grade, education.description, enterprise.name from usereducation inner join education on education.id=usereducation.education_id inner join enterprise on enterprise.is=education.enterprise_id where usercareer.user_id=:user_id;"
+        statement = "select usereducation.id as id, education.major, education.start_time, education.end_time, education.degree_type, education.grade, education.description from usereducation inner join education on education.id=usereducation.education_id where usercareer.user_id=:user_id;"
 
         return list(self.session.execute(text(statement), {"user_id": user_id}).mappings().fetchall())

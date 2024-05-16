@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Header, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from src.models.profile import Profile, Country, Skill, UserSkill, Career, UserCareer, Enterprise, Education, UserEducation, Industry, EnterpriseType
+from src.models.profile import Profile, Country, Skill, UserSkill, Career, UserCareer, Enterprise, Education, UserEducation, Industry, EnterpriseType, EmploymentType
 from src.models.accounts import User
 from src.service.accounts import UserService
 from src.models.repository import ProfileRepository, UserRepository, SkillRepository, CareerRepository, EducationRepository
@@ -258,7 +258,7 @@ def register_career_handler(
 
     relation: UserCareer = career_repo.add_object(relation)
 
-    return RegisterSkillResponse(message="career registered")
+    return RegisterSkillResponse(message="Career is registered")
 
 
 def get_career_list_handler(
@@ -270,6 +270,12 @@ def get_career_list_handler(
 
     careers = career_repo.filter_user_career(user_id=user.id)
 
+    emp_types = career_repo.get_all_obj(EmploymentType)
+
+    employment_type = {
+        emp_type[0].id : emp_type[0].name for emp_type in emp_types
+    }
+
     return sorted(
         [
             GetCareerResponse(
@@ -279,9 +285,10 @@ def get_career_list_handler(
                 start_time=career.start_time,
                 end_time=career.end_time,
                 employment_type_id=career.employment_type_id,
+                employment_type_name=employment_type[career.employment_type_id],
                 enterprise_id=career.enterprise_id
             )
-            for career in careers
+            for relation, career in careers
         ],
         key=lambda career: career.id
     )
@@ -325,7 +332,7 @@ def delete_career_handler(
 
     deleted_career: Career = career_repo.delete_object(career)
 
-    return RegisterSkillResponse(message="career deleted")
+    return RegisterSkillResponse(message="Career is deleted")
 
 
 def register_new_enterprise_handler(

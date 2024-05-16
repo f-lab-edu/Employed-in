@@ -43,6 +43,7 @@ class GetCareerResponse(BaseModel):
     start_time: date
     end_time: date | None
     employment_type_id: int
+    employment_type_name: str
     enterprise_id: int
 
 
