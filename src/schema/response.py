@@ -44,3 +44,22 @@ class GetCareerResponse(BaseModel):
     end_time: date | None
     employment_type_id: int
     enterprise_id: int
+
+
+class GetEducationResponse(BaseModel):
+    id: int
+    position: str
+    description: str
+    start_time: date
+    end_time: date | None
+    employment_type_id: int
+    enterprise_id: int
+
+
+class GetEnterpriseResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    enterprise_type_name: str | None
+    industry_name: str | None
+    country_name: str | None

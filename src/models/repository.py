@@ -24,8 +24,8 @@ class BaseRepository:
         self.session.commit()
         return obj
 
-    def get_obj_by_id(self, obj, id: int):
-        return self.session.scalar(select(obj).where(obj.id == id))
+    def get_obj_by_id(self, obj, obj_id: int):
+        return self.session.scalar(select(obj).where(obj.id == obj_id))
 
     def get_all_obj(self, obj):
         return list(self.session.execute(select(obj)))
@@ -79,20 +79,12 @@ class SkillRepository(BaseRepository):
 class CareerRepository(BaseRepository):
 
     def filter_user_career(self, user_id: int) -> list:
-        statement = "select usercareer.id, career.position, career.description, career.start_time, career.end_time, career.employment_type_id, enterprise.name from usercareer inner join career on career.id=usercareer.career_id inner join enterprise on enterprise.id=career.enterprise_id where usercareer.user_id=:user_id;"
+        statement = "select career.id, usercareer.id as relation_id, career.position, career.description, career.start_time, career.end_time, career.employment_type_id, career.enterprise_id, enterprise.name as enterprise_name from usercareer inner join career on career.id=usercareer.career_id inner join enterprise on enterprise.id=career.enterprise_id where usercareer.user_id=:user_id;"
 
         return list(self.session.execute(text(statement), {"user_id": user_id}).mappings().fetchall())
 
 
 class EducationRepository(BaseRepository):
-
-    def get_obj_by_id(self, education_id: int) -> Education:
-        result: Education = self.session.execute(select(Education).where(Education.id == education_id))
-
-        if not result:
-            raise HTTPException(status_code=400, detail='Invalid career id')
-
-        return result
 
     def filter_user_education(self, user_id: int) -> list:
         statement = "select usereducation.id as id, education.major, education.start_time, education.end_time, education.degree_type, education.grade, education.description, enterprise.name from usereducation inner join education on education.id=usereducation.education_id inner join enterprise on enterprise.is=education.enterprise_id where usercareer.user_id=:user_id;"

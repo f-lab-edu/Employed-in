@@ -1,13 +1,13 @@
 from fastapi import HTTPException, Header, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from src.models.profile import Profile, Country, Skill, UserSkill, Career, UserCareer, Enterprise
+from src.models.profile import Profile, Country, Skill, UserSkill, Career, UserCareer, Enterprise, Education, UserEducation, Industry, EnterpriseType
 from src.models.accounts import User
 from src.service.accounts import UserService
-from src.models.repository import ProfileRepository, UserRepository, SkillRepository, CareerRepository
-from src.schema.request import CreateProfileRequest, RegisterSkillRequest, RegisterCareerRequest, CreateEnterpriseRequest
+from src.models.repository import ProfileRepository, UserRepository, SkillRepository, CareerRepository, EducationRepository
+from src.schema.request import CreateProfileRequest, RegisterSkillRequest, RegisterCareerRequest, CreateEnterpriseRequest, RegisterEducationRequest
 
-from src.schema.response import CreateProfileResponse, GetProfileResponse, GetCountryResponse, RegisterSkillResponse, SkillResponse, GetCareerResponse
+from src.schema.response import CreateProfileResponse, GetProfileResponse, GetCountryResponse, RegisterSkillResponse, SkillResponse, GetCareerResponse, GetEducationResponse, GetEnterpriseResponse
 from src.interfaces.permission import get_access_token, Auths
 
 
@@ -268,9 +268,7 @@ def get_career_list_handler(
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    statement = f"select career.id, usercareer.id as relation_id, career.position, career.description, career.start_time, career.end_time, career.employment_type_id, career.enterprise_id from usercareer inner join career on career.id=usercareer.career_id where usercareer.user_id={user.id};"
-
-    careers = career_repo.raw_query(statement=statement)
+    careers = career_repo.filter_user_career(user_id=user.id)
 
     return sorted(
         [
@@ -351,7 +349,7 @@ def register_new_enterprise_handler(
     return RegisterSkillResponse(message="enterprise registered")
 
 
-def enterprise_handler(
+def enterprises_handler(
         token: str = Depends(get_access_token),
         user_repo: UserRepository = Depends(),
         career_repo: CareerRepository = Depends()
@@ -360,4 +358,137 @@ def enterprise_handler(
 
     enterprises: list[Enterprise] = career_repo.get_all_obj(Enterprise)
 
-    return RegisterSkillResponse(message="query work")
+    return sorted(
+        [
+            GetEnterpriseResponse(
+                id=enterprise.id,
+                name=enterprise.name,
+                description=enterprise.description
+            )
+            for enterprise in enterprises
+        ],
+        key=lambda enterprise: enterprise.id
+    )
+
+
+def enterprise_handler(
+        enterprise_id: int,
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        career_repo: CareerRepository = Depends()
+):
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    enterprise: Enterprise = career_repo.get_obj_by_id(Enterprise, enterprise_id)
+
+    industry: Industry = career_repo.get_obj_by_id(Industry, enterprise.industry_id)
+
+    country: Country = career_repo.get_obj_by_id(Country, enterprise.country_id)
+
+    enterprise_type: EnterpriseType = career_repo.get_obj_by_id(EnterpriseType, enterprise.enterprise_type_id)
+
+    return GetEnterpriseResponse(
+        id=enterprise.id,
+        name=enterprise.name,
+        description=enterprise.description,
+        enterprise_type_name=enterprise_type.name,
+        industry_name=industry.name,
+        country_name=country.name
+    )
+
+
+def register_education_handler(
+        request: RegisterEducationRequest,
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        education_repo: EducationRepository = Depends()
+):
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    education = Education(
+        major=request.major,
+        start_time=request.start_time,
+        graduate_time=request.graduate_time,
+        grade=request.grade,
+        degree_type=request.degree_type,
+        description=request.description,
+    )
+
+    new_education: Education = education_repo.add_object(education)
+
+    relation = UserEducation(
+        user_id=user.id,
+        education_id=new_education.id
+    )
+
+    relation: UserEducation = education_repo.add_object(relation)
+
+    return RegisterSkillResponse(message="education registered")
+
+
+def get_education_list_handler(
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        education_repo: EducationRepository = Depends()
+):
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    educations = education_repo.filter_user_education(user_id=user.id)
+
+    return sorted(
+        [
+            GetEducationResponse(
+                id=education.id,
+                major=education.major,
+                description=education.description,
+                start_time=education.start_time,
+                graduate_time=education.graduate_time,
+                grade=education.grade,
+                enterprise_id=education.enterprise_id,
+                enterprise_name=education.enterprise_name
+            )
+            for education in educations
+        ],
+        key=lambda education: education.id
+    )
+
+
+def update_education_handler(
+        request: RegisterEducationRequest,
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        education_repo: EducationRepository = Depends()
+):
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    education: Education = education_repo.get_obj_by_id(Education, request.id)
+
+    education.major = request.major
+    education.start_time = request.start_time
+    education.graduate_time = request.graduate_time
+    education.grade = request.grade
+    education.degree_type = request.degree_type
+    education.description = request.description
+
+    education: Education = education_repo.add_object(education)
+
+    return RegisterSkillResponse(message="education updated")
+
+
+def delete_education_handler(
+        education_id: int,
+        token: str = Depends(get_access_token),
+        user_repo: UserRepository = Depends(),
+        education_repo: EducationRepository = Depends()
+):
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+
+    relation: UserEducation = education_repo.get_relation_obj(UserEducation, User, Education, user.id, education_id)
+
+    education: Education = education_repo.get_obj_by_id(Education, education_id)
+
+    deleted_relation: UserEducation = education_repo.delete_object(relation)
+
+    deleted_career: Education = education_repo.delete_object(education)
+
+    return RegisterSkillResponse(message="education deleted")
