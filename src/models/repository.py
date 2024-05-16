@@ -87,6 +87,6 @@ class CareerRepository(BaseRepository):
 class EducationRepository(BaseRepository):
 
     def filter_user_education(self, user_id: int) -> list:
-        statement = "select usereducation.id as id, education.major, education.start_time, education.end_time, education.degree_type, education.grade, education.description from usereducation inner join education on education.id=usereducation.education_id where usercareer.user_id=:user_id;"
+        statement = "select usereducation.id as id, education.major, education.start_time, education.graduate_time, education.degree_type, education.grade, education.description, education.enterprise_id as enterprise_id, enterprise.name as enterprise_name from usereducation inner join education on education.id=usereducation.education_id inner join enterprise on enterprise.id=education.enterprise_id where usereducation.user_id=:user_id;"
 
         return list(self.session.execute(text(statement), {"user_id": user_id}).mappings().fetchall())

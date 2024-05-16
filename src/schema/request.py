@@ -94,7 +94,7 @@ class RegisterEducationRequest(BaseModel):
     major: Optional[constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")] = None
     start_time: date
     graduate_time: Optional[date] = None
-    grade: Optional[constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")] = None
+    grade: Optional[constr(max_length=10)] = None
     degree_type: Optional[constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")] = None
     description: Optional[constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")] = None
     enterprise_id: int

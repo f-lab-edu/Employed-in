@@ -6,10 +6,11 @@ from dateutil.relativedelta import relativedelta
 from fastapi import status
 from httpx import AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.engine.row import RowMapping
 
 from src.models.accounts import User
-from src.models.profile import Profile, Country, Skill, UserSkill, Career, UserCareer, Enterprise, EnterpriseType, EmploymentType
-from src.models.repository import ProfileRepository, UserRepository, SkillRepository, CareerRepository
+from src.models.profile import Profile, Country, Skill, UserSkill, Career, UserCareer, Enterprise, EnterpriseType, EmploymentType, Education, UserEducation
+from src.models.repository import ProfileRepository, UserRepository, SkillRepository, CareerRepository, EducationRepository
 from src.service.accounts import UserService
 from src.interfaces.permission import Auths
 
@@ -1194,4 +1195,264 @@ async def test_registered_career_delete_successfully(client: AsyncClient, sessio
 
     assert data == {
         "message": "Career is deleted"
+    }
+
+
+@pytest.mark.asyncio
+async def test_register_education_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    start_date = datetime.datetime.now().date() - relativedelta(months=6)
+
+    end_date = datetime.datetime.now().date() + relativedelta(months=6)
+
+    test_education = Education(
+        id=1,
+        major="Sociology",
+        start_time=start_date,
+        graduate_time=end_date,
+        grade="4.0",
+        degree_type="Bachelor",
+        description="Lab Dog",
+        enterprise_id=1
+    )
+
+    test_relation = UserEducation(
+        id=1,
+        user_id=1,
+        education_id=1
+    )
+
+    mocker_user = mocker.patch.object(
+        Auths, "basic_authentication", return_value=test_user
+    )
+
+    mocker_relation = mocker.patch.object(
+        EducationRepository, "add_object", side_effect=[test_education, test_relation]
+    )
+
+    response = await client.post(
+        url="/account/educations",
+        headers={"Authorization": "Bearer test"},
+        json={
+            "major": "Sociology",
+            "description": "Lab Dog",
+            "start_time": start_date.strftime("%Y-%m-%d"),
+            "graduate_time": end_date.strftime("%Y-%m-%d"),
+            "grade" : "4.0",
+            "degree_type" : "Bachelor",
+            "enterprise_id": 1
+        }
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+
+    data = response.json()
+
+    assert data == {
+        "message": "Education is registered"
+    }
+
+
+@pytest.mark.asyncio
+async def test_registered_education_list_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    date = datetime.datetime.now().date()
+
+    class RawReturn(object):
+        def __init__(self, attrs):
+            self.id = attrs["id"]
+            self.major = attrs["major"]
+            self.start_time = attrs["start_time"]
+            self.graduate_time = attrs["graduate_time"]
+            self.degree_type = attrs["degree_type"]
+            self.grade = attrs["grade"]
+            self.description = attrs["description"]
+            self.enterprise_id = attrs["enterprise_id"]
+            self.enterprise_name = attrs["enterprise_name"]
+
+    test_education = [
+        {
+            "id": 1,
+            "major": "Sociology",
+            "start_time": date - relativedelta(years=3),
+            "graduate_time": date,
+            "degree_type": "Bachelor",
+            "grade": "4.0",
+            "description": "Lab Dog",
+            "enterprise_id": 1,
+            "enterprise_name": "IOTS",
+        },
+        {
+            "id": 2,
+            "major": "Sociology",
+            "start_time": date,
+            "graduate_time": None,
+            "degree_type": "Master",
+            "grade": "4.0",
+            "description": "Lab Dog",
+            "enterprise_id": 1,
+            "enterprise_name": "IOTS",
+        }
+    ]
+
+    test_educations = [
+        RawReturn(
+            {
+                "id": 1,
+                "major": "Sociology",
+                "start_time": date - relativedelta(years=3),
+                "graduate_time": date,
+                "degree_type": "Bachelor",
+                "grade": "4.0",
+                "description": "Lab Dog",
+                "enterprise_id": 1,
+                "enterprise_name": "IOTS",
+            }
+        ),
+        RawReturn(
+            {
+                "id": 2,
+                "major": "Sociology",
+                "start_time": date,
+                "graduate_time": None,
+                "degree_type": "Master",
+                "grade": "4.0",
+                "description": "Lab Dog",
+                "enterprise_id": 1,
+                "enterprise_name": "IOTS",
+            }
+        )
+    ]
+
+    print(test_educations[0].major)
+
+    mocker_user = mocker.patch.object(
+        Auths, "basic_authentication", return_value=test_user
+    )
+
+    mocker_new_career = mocker.patch.object(
+        EducationRepository, "filter_user_education", return_value=test_educations
+    )
+
+    response = await client.get(
+        url="/account/educations",
+        headers={"Authorization": "Bearer test"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    data = response.json()
+
+    assert data == [
+        {
+            "id": 1,
+            "major": "Sociology",
+            "start_time": (date - relativedelta(years=3)).strftime("%Y-%m-%d"),
+            "graduate_time": date.strftime("%Y-%m-%d"),
+            "degree_type": "Bachelor",
+            "grade": "4.0",
+            "description": "Lab Dog",
+            "enterprise_id": 1,
+            "enterprise_name": "IOTS",
+        },
+        {
+            "id": 2,
+            "major": "Sociology",
+            "start_time": date.strftime("%Y-%m-%d"),
+            "graduate_time": None,
+            "degree_type": "Master",
+            "grade": "4.0",
+            "description": "Lab Dog",
+            "enterprise_id": 1,
+            "enterprise_name": "IOTS",
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_registered_education_delete_successfully(client: AsyncClient, session: AsyncSession, mocker):
+    test_user = User(
+        id=1,
+        email="test@test.com",
+        password="hashed",
+        nickname=None,
+        phone_number="010-1111-1111",
+        is_business=False,
+        is_admin=False,
+        created_at=datetime.datetime.now(),
+        membership_id=1,
+    )
+
+    mocker_user = mocker.patch.object(
+        Auths, "basic_authentication", return_value=test_user
+    )
+
+    test_relation = UserEducation(
+        id=1,
+        user_id=1,
+        education_id=1
+    )
+
+    date = datetime.datetime.now().date()
+
+    test_education = Education(
+        id=1,
+        major="Sociology",
+        description="Lab Dog",
+        grade="4.0",
+        degree_type="Bachelor",
+        start_time=date - relativedelta(years=3),
+        graduate_time=date - relativedelta(years=2),
+        enterprise_id=1,
+            )
+
+    mocker_user = mocker.patch.object(
+        Auths, "basic_authentication", return_value=test_user
+    )
+
+    mocker_relation = mocker.patch.object(
+        EducationRepository, "get_relation_obj", return_value=test_relation
+    )
+
+    mocker_relation = mocker.patch.object(
+        EducationRepository, "get_obj_by_id", return_value=test_education
+    )
+
+    mocker_relation = mocker.patch.object(
+        EducationRepository, "delete_object", side_effect=[test_relation, test_education]
+    )
+
+    response = await client.delete(
+        url="/account/educations/1",
+        headers={"Authorization": "Bearer test"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    data = response.json()
+
+    assert data == {
+        "message": "Education is deleted"
     }

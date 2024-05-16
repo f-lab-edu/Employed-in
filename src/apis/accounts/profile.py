@@ -7,7 +7,7 @@ from src.service.accounts import UserService
 from src.models.repository import ProfileRepository, UserRepository, SkillRepository, CareerRepository, EducationRepository
 from src.schema.request import CreateProfileRequest, RegisterSkillRequest, RegisterCareerRequest, CreateEnterpriseRequest, RegisterEducationRequest
 
-from src.schema.response import CreateProfileResponse, GetProfileResponse, GetCountryResponse, RegisterSkillResponse, SkillResponse, GetCareerResponse, GetEducationResponse, GetEnterpriseResponse
+from src.schema.response import CreateProfileResponse, GetProfileResponse, GetCountryResponse, RegisterSkillResponse, SkillResponse, GetCareerResponse, GetEducationResponse, GetEnterpriseResponse, GetEnterprisesResponse
 from src.interfaces.permission import get_access_token, Auths
 
 
@@ -364,13 +364,13 @@ def enterprises_handler(
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
     enterprises: list[Enterprise] = career_repo.get_all_obj(Enterprise)
-
+    print(enterprises)
     return sorted(
         [
-            GetEnterpriseResponse(
-                id=enterprise.id,
-                name=enterprise.name,
-                description=enterprise.description
+            GetEnterprisesResponse(
+                id=enterprise[0].id,
+                name=enterprise[0].name,
+                description=enterprise[0].description
             )
             for enterprise in enterprises
         ],
@@ -419,6 +419,7 @@ def register_education_handler(
         grade=request.grade,
         degree_type=request.degree_type,
         description=request.description,
+        enterprise_id=request.enterprise_id
     )
 
     new_education: Education = education_repo.add_object(education)
@@ -430,7 +431,7 @@ def register_education_handler(
 
     relation: UserEducation = education_repo.add_object(relation)
 
-    return RegisterSkillResponse(message="education registered")
+    return RegisterSkillResponse(message="Education is registered")
 
 
 def get_education_list_handler(
@@ -451,6 +452,7 @@ def get_education_list_handler(
                 start_time=education.start_time,
                 graduate_time=education.graduate_time,
                 grade=education.grade,
+                degree_type=education.degree_type,
                 enterprise_id=education.enterprise_id,
                 enterprise_name=education.enterprise_name
             )
@@ -498,4 +500,4 @@ def delete_education_handler(
 
     deleted_career: Education = education_repo.delete_object(education)
 
-    return RegisterSkillResponse(message="education deleted")
+    return RegisterSkillResponse(message="Education is deleted")
