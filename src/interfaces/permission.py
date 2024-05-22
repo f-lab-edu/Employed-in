@@ -2,7 +2,7 @@ from fastapi import HTTPException, Header, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.models.accounts import User
 from src.service.accounts import UserService
-from src.models.repository import UserRepository
+from src.models.repository import AccountRepository
 
 
 #def basic_authentication(token: str, user_service: UserService = Depends(), user_repo: UserRepository = Depends()) -> User:
@@ -16,20 +16,23 @@ def get_access_token(auth_header: HTTPAuthorizationCredentials | None = Depends(
 
 class Auths:
     @staticmethod
-    def basic_authentication(token: str, user_repo: UserRepository) -> User:
+    def basic_authentication(token: str, user_repo: AccountRepository, relation=None) -> User:
         verified = UserService().decode_jwt(access_token=token)
 
         if not verified:
             raise HTTPException(status_code=403, detail="Invalid token")
 
-        user = user_repo.get_user_by_email(user_email=verified)
+        if relation:
+            user = user_repo.get_user_with_relation(user_email=verified, relation=relation)
+        else:
+            user = user_repo.get_user_by_email(user_email=verified)
 
         if not user:
             raise HTTPException(status_code=403, detail="No user")
 
         return user
 
-    def admin_permission(self, token: str, user_repo: UserRepository) -> User:
+    def admin_permission(self, token: str, user_repo: AccountRepository) -> User:
         user: User = self.basic_authentication(token=token, user_repo=user_repo)
 
         if not user.is_admin:

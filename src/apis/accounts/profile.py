@@ -4,7 +4,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.models.profile import Profile, Country, Skill, UserSkill, Career, UserCareer, Enterprise, Education, UserEducation, Industry, EnterpriseType, EmploymentType
 from src.models.accounts import User
 from src.service.accounts import UserService
-from src.models.repository import ProfileRepository, UserRepository, SkillRepository, CareerRepository, EducationRepository
+from src.models.repository import AccountRepository
 from src.schema.request import CreateProfileRequest, RegisterSkillRequest, RegisterCareerRequest, CreateEnterpriseRequest, RegisterEducationRequest
 
 from src.schema.response import CreateProfileResponse, GetProfileResponse, GetCountryResponse, RegisterSkillResponse, SkillResponse, GetCareerResponse, GetEducationResponse, GetEnterpriseResponse, GetEnterprisesResponse
@@ -14,14 +14,10 @@ from src.interfaces.permission import get_access_token, Auths
 def profile_create_handler(
     request: CreateProfileRequest,
     token: str = Depends(get_access_token),
-    user_repo: UserRepository = Depends(),
-    profile_repo: ProfileRepository = Depends()
-    ):
+    user_repo: AccountRepository = Depends()
+):
 
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
-
-    if not profile_repo.profile_validation(user_id=user.id, country_id=request.country_id):
-        raise HTTPException(status_code=400, detail="Profile for that country exists")
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Profile")
 
     new_profile: Profile = Profile(
         name=request.name,
@@ -31,19 +27,18 @@ def profile_create_handler(
         country_id=request.country_id,
         user_id=user.id
     )
-    profile: Profile = profile_repo.add_object(new_profile)
+    user.profiles.append(new_profile)
 
-    return CreateProfileResponse(message="New profile created", data=profile)
+    user_repo.add_object(user)
+
+    return CreateProfileResponse(message="New profile created", data=new_profile)
 
 
 def profile_lists_handler(
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        profile_repo: ProfileRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
-
-    profiles: list[(Profile, Country)] = profile_repo.filter_obj(user_id=user.id)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Profile")
 
     return sorted(
         [
@@ -55,7 +50,7 @@ def profile_lists_handler(
                 region=profile.region,
                 country_name=country
             )
-            for profile, country in profiles
+            for profile, country in user.profiles
         ],
         key=lambda profile: profile.id,
     )
@@ -64,12 +59,11 @@ def profile_lists_handler(
 def profile_handler(
         profile_id: int,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        profile_repo: ProfileRepository = Depends(),
+        user_repo: AccountRepository = Depends(),
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    profile, country = profile_repo.get_obj_by_id(profile_id=profile_id, user_id=user.id)
+    profile = user_repo.get_obj_by_id(obj=Profile, obj_id=profile_id)
 
     if not profile:
         raise HTTPException(status_code=400, detail="Invalid profile id")
@@ -80,25 +74,24 @@ def profile_handler(
                 occupation=profile.occupation,
                 personal_description=profile.personal_description,
                 region=profile.region,
-                country_name=country
+                country_name=profile.country.name
             )
 
 
 def update_profile_handler(
         request: CreateProfileRequest,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        profile_repo: ProfileRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
 
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Profile")
 
     if not request.profile_id:
         raise HTTPException(status_code=400, detail='profile id missed')
 
-    profile, country = profile_repo.get_obj_by_id(profile_id=request.profile_id, user_id=user.id)
+    profile = user_repo.get_obj_by_id(obj=Profile, obj_id=request.profile_id)
 
-    if not profile:
+    if not profile or profile.user_id != user.id:
         raise HTTPException(status_code=400, detail='Invalid profile id')
 
     profile.name = request.name
@@ -107,7 +100,7 @@ def update_profile_handler(
     profile.region = request.region
     profile.country_id = request.country_id
 
-    profile: Profile = profile_repo.add_object(profile)
+    user_repo.add_object(user)
 
     return CreateProfileResponse(message="Profile updated", data=profile)
 
@@ -115,27 +108,28 @@ def update_profile_handler(
 def delete_profile_handler(
         profile_id: int,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        profile_repo: ProfileRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
 
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    profile, country = profile_repo.get_obj_by_id(profile_id=profile_id, user_id=user.id)
+    profile = user_repo.get_obj_by_id(obj=Profile, obj_id=profile_id)
 
-    profile: Profile | None = profile_repo.delete_object(obj=profile)
+    if not profile or profile.user_id != user.id:
+        raise HTTPException(status_code=400, detail='Invalid profile id')
+
+    profile: Profile | None = user_repo.delete_object(obj=profile)
 
     return CreateProfileResponse(message="Profile deleted", data=profile)
 
 
 def get_country_list_handler(
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        profile_repo: ProfileRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
     Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    countries: list[Country] = profile_repo.get_country_list()
+    countries: list[Country] = user_repo.get_all_obj(obj=Country)
 
     return sorted(
         [
@@ -152,37 +146,32 @@ def get_country_list_handler(
 def register_skill_handler(
         request: RegisterSkillRequest,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        skill_repo: SkillRepository = Depends()
+        user_repo: AccountRepository = Depends(),
 ):
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Skill")
 
     if request.id is not None:
-        if not skill_repo.skill_validation(skill_id=request.id, skill_name=request.name):
-            raise HTTPException(status_code=400, detail="Skill id and name is not match")
-
-        relation = UserSkill(user_id=user.id, skill_id=request.id)
+        skill = user_repo.get_obj_by_id(obj=Skill, obj_id=request.id)
 
     else:
-        skill = Skill(name=request.name)
+        skill_obj = Skill(name=request.name)
 
-        new_skill: Skill = skill_repo.add_object(skill)
+        skill: Skill = user_repo.add_object(skill_obj)
 
-        relation = UserSkill(user_id=user.id, skill_id=new_skill.id)
+    user.skills.append(skill)
 
-    new_relation: UserSkill = skill_repo.add_object(obj=relation)
+    user_repo.add_object(obj=user)
 
     return RegisterSkillResponse(message="Skill is registered")
 
 
 def get_skill_list_handler(
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        skill_repo: SkillRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    skill_list: list[Skill] = skill_repo.get_all_obj(obj=Skill)
+    skill_list = user_repo.get_all_obj(obj=Skill)
 
     return sorted(
         [
@@ -198,12 +187,9 @@ def get_skill_list_handler(
 
 def filter_registered_skill_handler(
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        skill_repo: SkillRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
-
-    skill_list: list[(UserSkill, Skill)] = skill_repo.filter_user_skill(user_id=user.id)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Skill")
 
     return sorted(
         [
@@ -211,7 +197,7 @@ def filter_registered_skill_handler(
                 id=skill.id,
                 name=skill.name
             )
-            for relation, skill in skill_list
+            for relation, skill in user.skills
         ],
         key=lambda skill: skill.id
     )
@@ -220,14 +206,15 @@ def filter_registered_skill_handler(
 def delete_registered_skill_handler(
         skill_id: int,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        skill_repo: SkillRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Skill")
 
-    relation: UserSkill = skill_repo.get_relation_obj(UserSkill, User, Skill, user.id, skill_id)
+    skills = [skill for skill in user.skills if skill.id != skill_id]
 
-    deleted_relation: UserSkill = skill_repo.delete_object(relation)
+    user.skills = skills
+
+    user_repo.add_object(user)
 
     return RegisterSkillResponse(message="Skill is deleted")
 
@@ -235,8 +222,7 @@ def delete_registered_skill_handler(
 def register_career_handler(
         request: RegisterCareerRequest,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        career_repo: CareerRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
@@ -249,28 +235,22 @@ def register_career_handler(
         employment_type_id=request.employment_type_id
     )
 
-    new_career: Career = career_repo.add_object(career)
+    new_career: Career = user_repo.add_object(career)
 
-    relation = UserCareer(
-        user_id=user.id,
-        career_id=new_career.id
-    )
+    user.careers.append(new_career)
 
-    relation: UserCareer = career_repo.add_object(relation)
+    user_repo.add_object(user)
 
     return RegisterSkillResponse(message="Career is registered")
 
 
 def get_career_list_handler(
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        career_repo: CareerRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Career")
 
-    careers = career_repo.filter_user_career(user_id=user.id)
-
-    emp_types = career_repo.get_all_obj(EmploymentType)
+    emp_types = user_repo.get_all_obj(EmploymentType)
 
     employment_type = {
         emp_type[0].id : emp_type[0].name for emp_type in emp_types
@@ -288,7 +268,7 @@ def get_career_list_handler(
                 employment_type_name=employment_type[career.employment_type_id],
                 enterprise_id=career.enterprise_id
             )
-            for relation, career in careers
+            for relation, career in user.careers
         ],
         key=lambda career: career.id
     )
@@ -297,12 +277,11 @@ def get_career_list_handler(
 def update_career_handler(
         request: RegisterCareerRequest,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        career_repo: CareerRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Career")
 
-    career: Career = career_repo.get_obj_by_id(Career, request.id)
+    career: Career = user_repo.get_obj_by_id(Career, request.id)
 
     career.position = request.position
     career.description = request.description
@@ -311,7 +290,7 @@ def update_career_handler(
     career.enterprise_id = request.enterprise_id
     career.employment_type_id = request.employment_type_id
 
-    career: Career = career_repo.add_object(career)
+    career: Career = user_repo.add_object(career)
 
     return RegisterSkillResponse(message="career updated")
 
@@ -319,18 +298,13 @@ def update_career_handler(
 def delete_career_handler(
         career_id: int,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        career_repo: CareerRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    relation: UserCareer = career_repo.get_relation_obj(UserCareer, User, Career, user.id, career_id)
+    career: Career = user_repo.get_obj_by_id(Career, career_id)
 
-    career: Career = career_repo.get_obj_by_id(Career, career_id)
-
-    deleted_relation: UserCareer = career_repo.delete_object(relation)
-
-    deleted_career: Career = career_repo.delete_object(career)
+    deleted_career: Career = user_repo.delete_object(career)
 
     return RegisterSkillResponse(message="Career is deleted")
 
@@ -338,8 +312,7 @@ def delete_career_handler(
 def register_new_enterprise_handler(
         request: CreateEnterpriseRequest,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        career_repo: CareerRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
@@ -351,20 +324,19 @@ def register_new_enterprise_handler(
         country_id=request.country_id
     )
 
-    new_enterprise: Enterprise = career_repo.add_object(enterprise)
+    new_enterprise: Enterprise = user_repo.add_object(enterprise)
 
     return RegisterSkillResponse(message="enterprise registered")
 
 
 def enterprises_handler(
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        career_repo: CareerRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
     enterprises: list[Enterprise] = career_repo.get_all_obj(Enterprise)
-    print(enterprises)
+
     return sorted(
         [
             GetEnterprisesResponse(
@@ -381,18 +353,17 @@ def enterprises_handler(
 def enterprise_handler(
         enterprise_id: int,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        career_repo: CareerRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    enterprise: Enterprise = career_repo.get_obj_by_id(Enterprise, enterprise_id)
+    enterprise: Enterprise = user_repo.get_obj_by_id(Enterprise, enterprise_id)
 
-    industry: Industry = career_repo.get_obj_by_id(Industry, enterprise.industry_id)
+    industry: Industry = user_repo.get_obj_by_id(Industry, enterprise.industry_id)
 
-    country: Country = career_repo.get_obj_by_id(Country, enterprise.country_id)
+    country: Country = user_repo.get_obj_by_id(Country, enterprise.country_id)
 
-    enterprise_type: EnterpriseType = career_repo.get_obj_by_id(EnterpriseType, enterprise.enterprise_type_id)
+    enterprise_type: EnterpriseType = user_repo.get_obj_by_id(EnterpriseType, enterprise.enterprise_type_id)
 
     return GetEnterpriseResponse(
         id=enterprise.id,
@@ -407,10 +378,9 @@ def enterprise_handler(
 def register_education_handler(
         request: RegisterEducationRequest,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        education_repo: EducationRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Education")
 
     education = Education(
         major=request.major,
@@ -422,26 +392,20 @@ def register_education_handler(
         enterprise_id=request.enterprise_id
     )
 
-    new_education: Education = education_repo.add_object(education)
+    new_education: Education = user_repo.add_object(education)
 
-    relation = UserEducation(
-        user_id=user.id,
-        education_id=new_education.id
-    )
+    user.educations.append(new_education)
 
-    relation: UserEducation = education_repo.add_object(relation)
+    user_repo.add_object(user)
 
     return RegisterSkillResponse(message="Education is registered")
 
 
 def get_education_list_handler(
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        education_repo: EducationRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
-
-    educations = education_repo.filter_user_education(user_id=user.id)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Education")
 
     return sorted(
         [
@@ -456,7 +420,7 @@ def get_education_list_handler(
                 enterprise_id=education.enterprise_id,
                 enterprise_name=education.enterprise_name
             )
-            for education in educations
+            for education in user.educations
         ],
         key=lambda education: education.id
     )
@@ -465,12 +429,11 @@ def get_education_list_handler(
 def update_education_handler(
         request: RegisterEducationRequest,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        education_repo: EducationRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    education: Education = education_repo.get_obj_by_id(Education, request.id)
+    education: Education = user_repo.get_obj_by_id(Education, request.id)
 
     education.major = request.major
     education.start_time = request.start_time
@@ -479,7 +442,7 @@ def update_education_handler(
     education.degree_type = request.degree_type
     education.description = request.description
 
-    education: Education = education_repo.add_object(education)
+    education: Education = user_repo.add_object(education)
 
     return RegisterSkillResponse(message="education updated")
 
@@ -487,17 +450,12 @@ def update_education_handler(
 def delete_education_handler(
         education_id: int,
         token: str = Depends(get_access_token),
-        user_repo: UserRepository = Depends(),
-        education_repo: EducationRepository = Depends()
+        user_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Education")
 
-    relation: UserEducation = education_repo.get_relation_obj(UserEducation, User, Education, user.id, education_id)
+    education: Education = user_repo.get_obj_by_id(Education, education_id)
 
-    education: Education = education_repo.get_obj_by_id(Education, education_id)
-
-    deleted_relation: UserEducation = education_repo.delete_object(relation)
-
-    deleted_career: Education = education_repo.delete_object(education)
+    deleted_career: Education = user_repo.delete_object(education)
 
     return RegisterSkillResponse(message="Education is deleted")

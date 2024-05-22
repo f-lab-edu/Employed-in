@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy import select, text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from abc import abstractmethod, ABCMeta, ABC
 
 from src.database import get_db
@@ -37,12 +37,27 @@ class BaseRepository:
         return list(self.session.execute(text(statement)).mappings().fetchall())
 
 
-class UserRepository(BaseRepository):
+class AccountRepository(BaseRepository):
 
     def get_user_by_email(self, user_email: str) -> User | None:
         return self.session.scalar(select(User).where(User.email == user_email))
 
+    def get_user_with_relation(self, user_email: str, relation) -> User | None:
+        if relation == "Skill":
+            return self.session.execute(select(User).options(selectinload(User.skills)).where(User.email == user_email))
 
+        elif relation == "Career":
+            return self.session.execute(select(User).options(selectinload(User.careers)).where(User.email == user_email))
+
+        elif relation == "Profile":
+            return self.session.execute(select(User).options(selectinload(User.profiles)).where(User.email == user_email))
+
+        elif relation == "Education":
+            return self.session.execute(select(User).options(selectinload(User.educations)).where(User.email == user_email))
+        else:
+            raise ValueError("God damn")
+
+'''
 class ProfileRepository(BaseRepository):
 
     def profile_validation(self, user_id: int, country_id: int) -> bool:
@@ -90,3 +105,4 @@ class EducationRepository(BaseRepository):
         statement = "select usereducation.id as id, education.major, education.start_time, education.graduate_time, education.degree_type, education.grade, education.description, education.enterprise_id as enterprise_id, enterprise.name as enterprise_name from usereducation inner join education on education.id=usereducation.education_id inner join enterprise on enterprise.id=education.enterprise_id where usereducation.user_id=:user_id;"
 
         return list(self.session.execute(text(statement), {"user_id": user_id}).mappings().fetchall())
+'''

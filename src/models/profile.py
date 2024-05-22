@@ -72,7 +72,8 @@ class Profile(SQLModel, table=True):
     country_id: int = Field(foreign_key="country.id")
     user_id: int = Field(foreign_key="user.id")
 
-    country: Country | None = Relationship(back_populates="profiles")
+    country: Country | None = Relationship(back_populates="profiles", sa_relationship_kwargs=dict(lazy="joined"))
+    user: "User" = Relationship(back_populates="profiles")
 
 
 class Education(SQLModel, table=True):
@@ -84,6 +85,8 @@ class Education(SQLModel, table=True):
     degree_type: str = Field(max_length=20)
     description: str = Field(nullable=True, max_length=45)
     enterprise_id: int = Field(foreign_key="enterprise.id")
+
+    users: list["User"] = Relationship(back_populates="educations", link_model=UserEducation)
 
 
 class Enterprise(SQLModel, table=True):

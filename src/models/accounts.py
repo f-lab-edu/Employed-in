@@ -2,7 +2,7 @@ import datetime
 
 from sqlmodel import Field, SQLModel, Relationship
 
-from .profile import UserSkill, UserCareer
+from .profile import UserSkill, UserCareer, UserEducation
 
 class User(SQLModel, table=True):
     id: int = Field(primary_key=True)
@@ -21,6 +21,8 @@ class User(SQLModel, table=True):
 
     skills: list["Skill"] = Relationship(back_populates="users", link_model=UserSkill)
     careers: list["Career"] = Relationship(back_populates="users", link_model=UserCareer)
+    educations: list["Education"] = Relationship(back_populates="users", link_model=UserEducation)
+    profiles: list["Profile"] = Relationship(back_populates="user")
 
 
 class UserRelation(SQLModel, table=True):
