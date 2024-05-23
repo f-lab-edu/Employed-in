@@ -44,16 +44,16 @@ class AccountRepository(BaseRepository):
 
     def get_user_with_relation(self, user_email: str, relation) -> User | None:
         if relation == "Skill":
-            return self.session.execute(select(User).options(selectinload(User.skills)).where(User.email == user_email))
+            return self.session.execute(select(User).options(selectinload(User.skills)).where(User.email == user_email)).scalar()
 
         elif relation == "Career":
-            return self.session.execute(select(User).options(selectinload(User.careers)).where(User.email == user_email))
+            return self.session.execute(select(User).options(selectinload(User.careers)).where(User.email == user_email)).scalar()
 
         elif relation == "Profile":
-            return self.session.execute(select(User).options(selectinload(User.profiles)).where(User.email == user_email))
+            return self.session.execute(select(User).options(selectinload(User.profiles)).where(User.email == user_email)).scalar()
 
         elif relation == "Education":
-            return self.session.execute(select(User).options(selectinload(User.educations)).where(User.email == user_email))
+            return self.session.execute(select(User).options(selectinload(User.educations)).where(User.email == user_email)).scalar()
         else:
             raise ValueError("God damn")
 

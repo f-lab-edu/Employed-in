@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException
 
 from src.models.accounts import User
-from src.models.repository import UserRepository
+from src.models.repository import AccountRepository
 from src.schema.request import LoginRequest, SignUpRequest
 from src.schema.response import JWTResponse
 from src.service.accounts import UserService
@@ -10,7 +10,7 @@ from src.service.accounts import UserService
 def user_sign_up_handler(
     request: SignUpRequest,
     user_service: UserService = Depends(),
-    user_repo: UserRepository = Depends(),
+    user_repo: AccountRepository = Depends(),
 ):
     if user_repo.get_user_by_email(user_email=request.email):
         raise HTTPException(status_code=400, detail="already registered")
@@ -34,7 +34,7 @@ def user_sign_up_handler(
 def user_login_handler(
     request: LoginRequest,
     user_service: UserService = Depends(),
-    user_repo: UserRepository = Depends(),
+    user_repo: AccountRepository = Depends(),
 ):
     user: User | None = user_repo.get_user_by_email(request.email)
 

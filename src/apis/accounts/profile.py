@@ -48,9 +48,9 @@ def profile_lists_handler(
                 occupation=profile.occupation,
                 personal_description=profile.personal_description,
                 region=profile.region,
-                country_name=country
+                country_name=profile.country.name
             )
-            for profile, country in user.profiles
+            for profile in user.profiles
         ],
         key=lambda profile: profile.id,
     )
@@ -335,7 +335,7 @@ def enterprises_handler(
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
-    enterprises: list[Enterprise] = career_repo.get_all_obj(Enterprise)
+    enterprises: list[Enterprise] = user_repo.get_all_obj(Enterprise)
 
     return sorted(
         [
