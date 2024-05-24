@@ -221,7 +221,7 @@ async def test_basic_authentication(mocker):
         return_value=test_user
     )
 
-    user: User = Auths().basic_authentication(token=test_token, user_repo=AccountRepository())
+    user: User = Auths().basic_authentication(token=test_token, account_repo=AccountRepository())
 
     assert user == test_user
 
@@ -248,7 +248,7 @@ async def test_admin_permission(mocker):
         return_value=test_user
     )
 
-    user: User = Auths().admin_permission(token=test_token, user_repo=AccountRepository())
+    user: User = Auths().admin_permission(token=test_token, account_repo=AccountRepository())
 
     assert user == test_user
 
@@ -275,6 +275,6 @@ async def test_admin_permission_failed(mocker):
         return_value=test_user
     )
     try:
-        result = Auths().admin_permission(token=test_token, user_repo=AccountRepository())
+        result = Auths().admin_permission(token=test_token, account_repo=AccountRepository())
     except HTTPException:
         assert True
