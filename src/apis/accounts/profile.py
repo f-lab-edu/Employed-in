@@ -65,7 +65,7 @@ def profile_handler(
 
     profile = user_repo.get_obj_by_id(obj=Profile, obj_id=profile_id)
 
-    if not profile.user.id != user.id:
+    if not profile or profile.user_id != user.id:
         raise HTTPException(status_code=400, detail="Invalid profile id")
 
     return GetProfileResponse(
@@ -412,8 +412,8 @@ def get_education_list_handler(
                 graduate_time=education.graduate_time,
                 grade=education.grade,
                 degree_type=education.degree_type,
-                enterprise_id=education.enterprise_id,
-                enterprise_name=education.enterprise_name
+                enterprise_id=education.enterprise.id,
+                enterprise_name=education.enterprise.name
             )
             for education in user.educations
         ],
