@@ -65,7 +65,7 @@ def profile_handler(
 
     profile = user_repo.get_obj_by_id(obj=Profile, obj_id=profile_id)
 
-    if not profile:
+    if not profile.user.id != user.id:
         raise HTTPException(status_code=400, detail="Invalid profile id")
 
     return GetProfileResponse(
@@ -84,7 +84,7 @@ def update_profile_handler(
         user_repo: AccountRepository = Depends()
 ):
 
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Profile")
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
 
     if not request.profile_id:
         raise HTTPException(status_code=400, detail='profile id missed')
@@ -100,7 +100,7 @@ def update_profile_handler(
     profile.region = request.region
     profile.country_id = request.country_id
 
-    user_repo.add_object(user)
+    user_repo.add_object(profile)
 
     return CreateProfileResponse(message="Profile updated", data=profile)
 
@@ -134,8 +134,8 @@ def get_country_list_handler(
     return sorted(
         [
             GetCountryResponse(
-                id=country[0].id,
-                name=country[0].name
+                id=country.id,
+                name=country.name
             )
             for country in countries
         ],
@@ -176,8 +176,8 @@ def get_skill_list_handler(
     return sorted(
         [
             SkillResponse(
-                id=skill[0].id,
-                name=skill[0].name
+                id=skill.id,
+                name=skill.name
             )
             for skill in skill_list
         ],
@@ -197,7 +197,7 @@ def filter_registered_skill_handler(
                 id=skill.id,
                 name=skill.name
             )
-            for relation, skill in user.skills
+            for skill in user.skills
         ],
         key=lambda skill: skill.id
     )
@@ -250,12 +250,6 @@ def get_career_list_handler(
 ):
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Career")
 
-    emp_types = user_repo.get_all_obj(EmploymentType)
-
-    employment_type = {
-        emp_type[0].id : emp_type[0].name for emp_type in emp_types
-    }
-
     return sorted(
         [
             GetCareerResponse(
@@ -265,10 +259,11 @@ def get_career_list_handler(
                 start_time=career.start_time,
                 end_time=career.end_time,
                 employment_type_id=career.employment_type_id,
-                employment_type_name=employment_type[career.employment_type_id],
-                enterprise_id=career.enterprise_id
+                employment_type_name=career.employment_type.name,
+                enterprise_id=career.enterprise_id,
+                enterprise_name=career.enterprise.name
             )
-            for relation, career in user.careers
+            for career in user.careers
         ],
         key=lambda career: career.id
     )
@@ -282,6 +277,9 @@ def update_career_handler(
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Career")
 
     career: Career = user_repo.get_obj_by_id(Career, request.id)
+
+    if career.id not in [reg_career.id for reg_career in user.careers]:
+        raise HTTPException(status_code=400, detail="Invalid Career id")
 
     career.position = request.position
     career.description = request.description
@@ -300,9 +298,12 @@ def delete_career_handler(
         token: str = Depends(get_access_token),
         user_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Career")
 
     career: Career = user_repo.get_obj_by_id(Career, career_id)
+
+    if career.id not in [reg_career.id for reg_career in user.careers]:
+        raise HTTPException(status_code=400, detail="Invalid Career id")
 
     deleted_career: Career = user_repo.delete_object(career)
 
@@ -340,9 +341,9 @@ def enterprises_handler(
     return sorted(
         [
             GetEnterprisesResponse(
-                id=enterprise[0].id,
-                name=enterprise[0].name,
-                description=enterprise[0].description
+                id=enterprise.id,
+                name=enterprise.name,
+                description=enterprise.description
             )
             for enterprise in enterprises
         ],
@@ -359,19 +360,13 @@ def enterprise_handler(
 
     enterprise: Enterprise = user_repo.get_obj_by_id(Enterprise, enterprise_id)
 
-    industry: Industry = user_repo.get_obj_by_id(Industry, enterprise.industry_id)
-
-    country: Country = user_repo.get_obj_by_id(Country, enterprise.country_id)
-
-    enterprise_type: EnterpriseType = user_repo.get_obj_by_id(EnterpriseType, enterprise.enterprise_type_id)
-
     return GetEnterpriseResponse(
         id=enterprise.id,
         name=enterprise.name,
         description=enterprise.description,
-        enterprise_type_name=enterprise_type.name,
-        industry_name=industry.name,
-        country_name=country.name
+        enterprise_type_name=enterprise.enterprise_type.name,
+        industry_name=enterprise.industry.name,
+        country_name=enterprise.country.name
     )
 
 
@@ -431,9 +426,12 @@ def update_education_handler(
         token: str = Depends(get_access_token),
         user_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, user_repo=user_repo)
+    user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Education")
 
     education: Education = user_repo.get_obj_by_id(Education, request.id)
+
+    if education.id not in [reg_edu.id for reg_edu in user.educations]:
+        raise HTTPException(status_code=400, detail="Invalid education id")
 
     education.major = request.major
     education.start_time = request.start_time
@@ -455,6 +453,9 @@ def delete_education_handler(
     user: User = Auths.basic_authentication(token=token, user_repo=user_repo, relation="Education")
 
     education: Education = user_repo.get_obj_by_id(Education, education_id)
+
+    if education.id not in [reg_edu.id for reg_edu in user.educations]:
+        raise HTTPException(status_code=400, detail="Invalid education id")
 
     deleted_career: Education = user_repo.delete_object(education)
 

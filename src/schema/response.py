@@ -46,6 +46,7 @@ class GetCareerResponse(BaseModel):
     employment_type_id: int
     employment_type_name: str
     enterprise_id: int
+    enterprise_name: str
 
 
 class GetEducationResponse(BaseModel):

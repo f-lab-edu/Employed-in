@@ -35,10 +35,14 @@ class EnterpriseType(SQLModel, table=True):
     id: int = Field(primary_key=True)
     name: str = Field(max_length=100)
 
+    enterprises: list["Enterprise"] = Relationship(back_populates="enterprise_type")
+
 
 class Industry(SQLModel, table=True):
     id: int = Field(primary_key=True)
     name: str = Field(max_length=100)
+
+    enterprises: list["Enterprise"] = Relationship(back_populates="industry")
 
 
 class Country(SQLModel, table=True):
@@ -46,6 +50,7 @@ class Country(SQLModel, table=True):
     name: str = Field(max_length=100)
 
     profiles: list["Profile"] = Relationship(back_populates="country")
+    enterprises: list["Enterprise"] = Relationship(back_populates="country")
 
 
 class Skill(SQLModel, table=True):
@@ -58,6 +63,8 @@ class Skill(SQLModel, table=True):
 class EmploymentType(SQLModel, table=True):
     id: int = Field(primary_key=True)
     name: str = Field(max_length=20)
+
+    careers: list["Career"] = Relationship(back_populates="employment_type")
 
 
 class Profile(SQLModel, table=True):
@@ -87,6 +94,7 @@ class Education(SQLModel, table=True):
     enterprise_id: int = Field(foreign_key="enterprise.id")
 
     users: list["User"] = Relationship(back_populates="educations", link_model=UserEducation)
+    enterprise: "Enterprise" = Relationship(back_populates="educations", sa_relationship_kwargs=dict(lazy="joined"))
 
 
 class Enterprise(SQLModel, table=True):
@@ -96,6 +104,12 @@ class Enterprise(SQLModel, table=True):
     enterprise_type_id: int = Field(foreign_key="enterprisetype.id")
     industry_id: int = Field(foreign_key="industry.id")
     country_id: int = Field(foreign_key="country.id")
+
+    country: Country | None = Relationship(back_populates="enterprises", sa_relationship_kwargs=dict(lazy="joined"))
+    industry: Industry | None = Relationship(back_populates="enterprises", sa_relationship_kwargs=dict(lazy="joined"))
+    enterprise_type: EnterpriseType | None = Relationship(back_populates="enterprises", sa_relationship_kwargs=dict(lazy="joined"))
+    careers: list["Career"] = Relationship(back_populates="enterprise")
+    educations: list[Education] = Relationship(back_populates="enterprise")
 
 
 class Career(SQLModel, table=True):
@@ -108,3 +122,5 @@ class Career(SQLModel, table=True):
     employment_type_id: int = Field(foreign_key="employmenttype.id")
 
     users: list["User"] = Relationship(back_populates="careers", link_model=UserCareer)
+    employment_type: EmploymentType | None = Relationship(back_populates="careers", sa_relationship_kwargs=dict(lazy="joined"))
+    enterprise: Enterprise | None = Relationship(back_populates="careers", sa_relationship_kwargs=dict(lazy="joined"))
