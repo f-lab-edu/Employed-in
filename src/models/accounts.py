@@ -5,6 +5,8 @@ from sqlmodel import Field, SQLModel, Relationship
 from .profile import UserSkill, UserCareer, UserEducation
 
 class User(SQLModel, table=True):
+    __tablename__ = "user"
+
     id: int = Field(primary_key=True)
     email: str = Field(
         min_length=1, max_length=60, unique=True, default=None, index=True
@@ -26,11 +28,15 @@ class User(SQLModel, table=True):
 
 
 class UserRelation(SQLModel, table=True):
+    __tablename__ = "user_relation"
+
     id: int = Field(primary_key=True)
     follower: int = Field(foreign_key="user.id")
     followed: int = Field(foreign_key="user.id")
 
 
 class Membership(SQLModel, table=True):
+    __tablename__ = "membership"
+
     id: int = Field(primary_key=True)
     name: str = Field(max_length=10)

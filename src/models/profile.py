@@ -6,32 +6,42 @@ from typing import Optional
 
 
 class UserEducation(SQLModel, table=True):
+    __tablename__ = "user_education"
+
     id: int = Field(primary_key=True)
     user_id: int = Field(foreign_key="user.id")
     education_id: int = Field(foreign_key="education.id")
 
 
 class UserEnterprise(SQLModel, table=True):
+    __tablename__ = "user_enterprise"
+
     id: int = Field(primary_key=True)
     user_id: int = Field(foreign_key="user.id")
     enterprise_id: int = Field(foreign_key="enterprise.id")
 
 
 class UserCareer(SQLModel, table=True):
+    __tablename__ = "user_career"
+
     id: int = Field(primary_key=True)
     user_id: int = Field(foreign_key="user.id")
     career_id: int = Field(foreign_key="career.id")
 
 
 class UserSkill(SQLModel, table=True):
+    __tablename__ = "user_skill"
     __table_args__ = (
         UniqueConstraint("skill_id", "user_id", name="userskill_uq"),
     )
+
     user_id: int | None = Field(foreign_key="user.id", default=None, primary_key=True)
     skill_id: int | None = Field(foreign_key="skill.id", default=None, primary_key=True)
 
 
 class EnterpriseType(SQLModel, table=True):
+    __tablename__ = "enterprise_type"
+
     id: int = Field(primary_key=True)
     name: str = Field(max_length=100)
 
@@ -39,6 +49,8 @@ class EnterpriseType(SQLModel, table=True):
 
 
 class Industry(SQLModel, table=True):
+    __tablename__ = "industry"
+
     id: int = Field(primary_key=True)
     name: str = Field(max_length=100)
 
@@ -46,6 +58,8 @@ class Industry(SQLModel, table=True):
 
 
 class Country(SQLModel, table=True):
+    __tablename__ = "country"
+
     id: int = Field(primary_key=True)
     name: str = Field(max_length=100)
 
@@ -54,6 +68,8 @@ class Country(SQLModel, table=True):
 
 
 class Skill(SQLModel, table=True):
+    __tablename__ = "skill"
+
     id: int = Field(primary_key=True)
     name: str = Field(max_length=30)
 
@@ -61,6 +77,8 @@ class Skill(SQLModel, table=True):
 
 
 class EmploymentType(SQLModel, table=True):
+    __tablename__ = "employment_type"
+
     id: int = Field(primary_key=True)
     name: str = Field(max_length=20)
 
@@ -68,9 +86,11 @@ class EmploymentType(SQLModel, table=True):
 
 
 class Profile(SQLModel, table=True):
+    __tablename__ = "profile"
     __table_args__ = (
         UniqueConstraint("country_id", "user_id", name="profile_uq"),
     )
+
     id: int = Field(primary_key=True)
     name: str = Field(nullable=True, max_length=30)
     occupation: str = Field(nullable=True, max_length=30)
@@ -84,6 +104,8 @@ class Profile(SQLModel, table=True):
 
 
 class Education(SQLModel, table=True):
+    __tablename__ = "education"
+
     id: int = Field(primary_key=True)
     major: str = Field(max_length=50)
     start_time: datetime.datetime = Field()
@@ -98,10 +120,12 @@ class Education(SQLModel, table=True):
 
 
 class Enterprise(SQLModel, table=True):
+    __tablename__ = "enterprise"
+
     id: int = Field(primary_key=True)
     name: str = Field(max_length=255)
     description: str = Field(max_length=255)
-    enterprise_type_id: int = Field(foreign_key="enterprisetype.id")
+    enterprise_type_id: int = Field(foreign_key="enterprise_type.id")
     industry_id: int = Field(foreign_key="industry.id")
     country_id: int = Field(foreign_key="country.id")
 
@@ -113,13 +137,15 @@ class Enterprise(SQLModel, table=True):
 
 
 class Career(SQLModel, table=True):
+    __tablename__ = "career"
+
     id: int = Field(primary_key=True)
     position: str = Field(max_length=30)
     description: str = Field(nullable=True, default=None, max_length=255)
     start_time: datetime.datetime = Field()
     end_time: datetime.datetime = Field(nullable=True, default=None)
     enterprise_id: int = Field(foreign_key="enterprise.id")
-    employment_type_id: int = Field(foreign_key="employmenttype.id")
+    employment_type_id: int = Field(foreign_key="employment_type.id")
 
     users: list["User"] = Relationship(back_populates="careers", link_model=UserCareer)
     employment_type: EmploymentType | None = Relationship(back_populates="careers", sa_relationship_kwargs=dict(lazy="joined"))
