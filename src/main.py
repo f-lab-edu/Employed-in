@@ -6,6 +6,7 @@ import uvicorn
 from starlette_csrf import CSRFMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from src import config
 from src.apis.common import common_router
@@ -36,6 +37,8 @@ app.add_middleware(
     sensitive_cookies={"TEST_TOKEN"},
     cookie_domain="localhost"
 )
+instrumentator = Instrumentator().instrument(app)
+instrumentator.expose(app, include_in_schema=False)
 
 if __name__ == "__main__":
     uvicorn.run(app, host=config.web.host, port=config.web.port)
