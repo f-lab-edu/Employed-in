@@ -9,13 +9,13 @@ from src.schema.response import CreateProfileResponse, GetProfileResponse, GetCo
 from src.interfaces.permission import get_access_token, Auths
 
 
-def profile_create_handler(
+async def profile_create_handler(
     request: CreateProfileRequest,
     token: str = Depends(get_access_token),
     account_repo: AccountRepository = Depends()
 ):
 
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Profile")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Profile")
 
     new_profile: Profile = Profile(
         name=request.name,
@@ -27,16 +27,16 @@ def profile_create_handler(
     )
     user.profiles.append(new_profile)
 
-    account_repo.add_object(user)
+    await account_repo.add_object(user)
 
     return CreateProfileResponse(message="New profile created", data=new_profile)
 
 
-def profile_lists_handler(
+async def profile_lists_handler(
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Profile")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Profile")
 
     return sorted(
         [
@@ -54,14 +54,14 @@ def profile_lists_handler(
     )
 
 
-def profile_handler(
+async def profile_handler(
         profile_id: int,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends(),
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo)
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo)
 
-    profile = account_repo.get_obj_by_id(obj=Profile, obj_id=profile_id)
+    profile = await account_repo.get_obj_by_id(obj=Profile, obj_id=profile_id)
 
     if not profile or profile.user_id != user.id:
         raise HTTPException(status_code=400, detail="Invalid profile id")
@@ -76,18 +76,18 @@ def profile_handler(
             )
 
 
-def update_profile_handler(
+async def update_profile_handler(
         request: CreateProfileRequest,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
 
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo)
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo)
 
     if not request.profile_id:
         raise HTTPException(status_code=400, detail='profile id missed')
 
-    profile = account_repo.get_obj_by_id(obj=Profile, obj_id=request.profile_id)
+    profile = await account_repo.get_obj_by_id(obj=Profile, obj_id=request.profile_id)
 
     if not profile or profile.user_id != user.id:
         raise HTTPException(status_code=400, detail='Invalid profile id')
@@ -98,36 +98,36 @@ def update_profile_handler(
     profile.region = request.region
     profile.country_id = request.country_id
 
-    account_repo.add_object(profile)
+    await account_repo.add_object(profile)
 
     return CreateProfileResponse(message="Profile updated", data=profile)
 
 
-def delete_profile_handler(
+async def delete_profile_handler(
         profile_id: int,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
 
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo)
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo)
 
-    profile = account_repo.get_obj_by_id(obj=Profile, obj_id=profile_id)
+    profile = await account_repo.get_obj_by_id(obj=Profile, obj_id=profile_id)
 
     if not profile or profile.user_id != user.id:
         raise HTTPException(status_code=400, detail='Invalid profile id')
 
-    profile: Profile | None = account_repo.delete_object(obj=profile)
+    profile: Profile | None = await account_repo.delete_object(obj=profile)
 
     return CreateProfileResponse(message="Profile deleted", data=profile)
 
 
-def get_country_list_handler(
+async def get_country_list_handler(
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    Auths.basic_authentication(token=token, account_repo=account_repo)
+    await Auths.basic_authentication(token=token, account_repo=account_repo)
 
-    countries: list[Country] = account_repo.get_all_obj(obj=Country)
+    countries: list[Country] = await account_repo.get_all_obj(obj=Country)
 
     return sorted(
         [
@@ -141,35 +141,35 @@ def get_country_list_handler(
     )
 
 
-def register_skill_handler(
+async def register_skill_handler(
         request: RegisterSkillRequest,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends(),
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Skill")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Skill")
 
     if request.id is not None:
-        skill = account_repo.get_obj_by_id(obj=Skill, obj_id=request.id)
+        skill = await account_repo.get_obj_by_id(obj=Skill, obj_id=request.id)
 
     else:
         skill_obj = Skill(name=request.name)
 
-        skill: Skill = account_repo.add_object(skill_obj)
+        skill: Skill = await account_repo.add_object(skill_obj)
 
     user.skills.append(skill)
 
-    account_repo.add_object(obj=user)
+    await account_repo.add_object(obj=user)
 
     return RegisterSkillResponse(message="Skill is registered")
 
 
-def get_skill_list_handler(
+async def get_skill_list_handler(
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo)
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo)
 
-    skill_list = account_repo.get_all_obj(obj=Skill)
+    skill_list = await account_repo.get_all_obj(obj=Skill)
 
     return sorted(
         [
@@ -183,11 +183,11 @@ def get_skill_list_handler(
     )
 
 
-def filter_registered_skill_handler(
+async def filter_registered_skill_handler(
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Skill")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Skill")
 
     return sorted(
         [
@@ -201,28 +201,28 @@ def filter_registered_skill_handler(
     )
 
 
-def delete_registered_skill_handler(
+async def delete_registered_skill_handler(
         skill_id: int,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Skill")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Skill")
 
     skills = [skill for skill in user.skills if skill.id != skill_id]
 
     user.skills = skills
 
-    account_repo.add_object(user)
+    await account_repo.add_object(user)
 
     return RegisterSkillResponse(message="Skill is deleted")
 
 
-def register_career_handler(
+async def register_career_handler(
         request: RegisterCareerRequest,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo)
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo)
 
     career = Career(
         position=request.position,
@@ -233,20 +233,20 @@ def register_career_handler(
         employment_type_id=request.employment_type_id
     )
 
-    new_career: Career = account_repo.add_object(career)
+    new_career: Career = await account_repo.add_object(career)
 
     user.careers.append(new_career)
 
-    account_repo.add_object(user)
+    await account_repo.add_object(user)
 
     return RegisterSkillResponse(message="Career is registered")
 
 
-def get_career_list_handler(
+async def get_career_list_handler(
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Career")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Career")
 
     return sorted(
         [
@@ -267,14 +267,14 @@ def get_career_list_handler(
     )
 
 
-def update_career_handler(
+async def update_career_handler(
         request: RegisterCareerRequest,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Career")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Career")
 
-    career: Career = account_repo.get_obj_by_id(Career, request.id)
+    career: Career = await account_repo.get_obj_by_id(Career, request.id)
 
     if career.id not in [reg_career.id for reg_career in user.careers]:
         raise HTTPException(status_code=400, detail="Invalid Career id")
@@ -286,34 +286,34 @@ def update_career_handler(
     career.enterprise_id = request.enterprise_id
     career.employment_type_id = request.employment_type_id
 
-    career: Career = account_repo.add_object(career)
+    career: Career = await account_repo.add_object(career)
 
     return RegisterSkillResponse(message="career updated")
 
 
-def delete_career_handler(
+async def delete_career_handler(
         career_id: int,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Career")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Career")
 
-    career: Career = account_repo.get_obj_by_id(Career, career_id)
+    career: Career = await account_repo.get_obj_by_id(Career, career_id)
 
     if career.id not in [reg_career.id for reg_career in user.careers]:
         raise HTTPException(status_code=400, detail="Invalid Career id")
 
-    deleted_career: Career = account_repo.delete_object(career)
+    deleted_career: Career = await account_repo.delete_object(career)
 
     return RegisterSkillResponse(message="Career is deleted")
 
 
-def register_new_enterprise_handler(
+async def register_new_enterprise_handler(
         request: CreateEnterpriseRequest,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo)
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo)
 
     enterprise = Enterprise(
         name=request.name,
@@ -323,18 +323,18 @@ def register_new_enterprise_handler(
         country_id=request.country_id
     )
 
-    new_enterprise: Enterprise = account_repo.add_object(enterprise)
+    new_enterprise: Enterprise = await account_repo.add_object(enterprise)
 
     return RegisterSkillResponse(message="enterprise registered")
 
 
-def enterprises_handler(
+async def enterprises_handler(
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo)
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo)
 
-    enterprises: list[Enterprise] = account_repo.get_all_obj(Enterprise)
+    enterprises: list[Enterprise] = await account_repo.get_all_obj(Enterprise)
 
     return sorted(
         [
@@ -349,14 +349,14 @@ def enterprises_handler(
     )
 
 
-def enterprise_handler(
+async def enterprise_handler(
         enterprise_id: int,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo)
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo)
 
-    enterprise: Enterprise = account_repo.get_obj_by_id(Enterprise, enterprise_id)
+    enterprise: Enterprise = await account_repo.get_obj_by_id(Enterprise, enterprise_id)
 
     return GetEnterpriseResponse(
         id=enterprise.id,
@@ -368,12 +368,12 @@ def enterprise_handler(
     )
 
 
-def register_education_handler(
+async def register_education_handler(
         request: RegisterEducationRequest,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Education")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Education")
 
     education = Education(
         major=request.major,
@@ -385,20 +385,20 @@ def register_education_handler(
         enterprise_id=request.enterprise_id
     )
 
-    new_education: Education = account_repo.add_object(education)
+    new_education: Education = await account_repo.add_object(education)
 
     user.educations.append(new_education)
 
-    account_repo.add_object(user)
+    await account_repo.add_object(user)
 
     return RegisterSkillResponse(message="Education is registered")
 
 
-def get_education_list_handler(
+async def get_education_list_handler(
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Education")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Education")
 
     return sorted(
         [
@@ -419,14 +419,14 @@ def get_education_list_handler(
     )
 
 
-def update_education_handler(
+async def update_education_handler(
         request: RegisterEducationRequest,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Education")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Education")
 
-    education: Education = account_repo.get_obj_by_id(Education, request.id)
+    education: Education = await account_repo.get_obj_by_id(Education, request.id)
 
     if education.id not in [reg_edu.id for reg_edu in user.educations]:
         raise HTTPException(status_code=400, detail="Invalid education id")
@@ -438,23 +438,23 @@ def update_education_handler(
     education.degree_type = request.degree_type
     education.description = request.description
 
-    education: Education = account_repo.add_object(education)
+    education: Education = await account_repo.add_object(education)
 
     return RegisterSkillResponse(message="education updated")
 
 
-def delete_education_handler(
+async def delete_education_handler(
         education_id: int,
         token: str = Depends(get_access_token),
         account_repo: AccountRepository = Depends()
 ):
-    user: User = Auths.basic_authentication(token=token, account_repo=account_repo, relation="Education")
+    user: User = await Auths.basic_authentication(token=token, account_repo=account_repo, relation="Education")
 
-    education: Education = account_repo.get_obj_by_id(Education, education_id)
+    education: Education = await account_repo.get_obj_by_id(Education, education_id)
 
     if education.id not in [reg_edu.id for reg_edu in user.educations]:
         raise HTTPException(status_code=400, detail="Invalid education id")
 
-    deleted_career: Education = account_repo.delete_object(education)
+    deleted_career: Education = await account_repo.delete_object(education)
 
     return RegisterSkillResponse(message="Education is deleted")

@@ -23,6 +23,8 @@ starlette-csrf = "^3.0.0"
 cryptography = "^42.0.7"
 uvicorn = {extras = ["standard"], version = "^0.30.1"}
 prometheus-fastapi-instrumentator = "^7.0.0"
+gunicorn = "^22.0.0"
+python-logging-loki = "^0.3.1"
 
 
 [tool.poetry.group.dev.dependencies]

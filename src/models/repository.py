@@ -3,53 +3,54 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session, selectinload
 from abc import abstractmethod, ABCMeta, ABC
 
-from src.database import get_db
+from src.database import get_db, get_async_db
 from src.models.accounts import User
 from src.models.profile import Profile, UserCareer, Career, Country, Skill, UserSkill, UserEducation, Education
 
 
 class BaseRepository:
-    def __init__(self, session: Session = Depends(get_db)):
+    def __init__(self, session: Session = Depends(get_async_db)):
         self.session = session
 
-    def add_object(self, obj):
+    async def add_object(self, obj):
         self.session.add(instance=obj)
-        self.session.commit()
-        self.session.refresh(instance=obj)
+        await self.session.commit()
+        await self.session.refresh(instance=obj)
 
         return obj
 
-    def delete_object(self, obj):
+    async def delete_object(self, obj):
         self.session.delete(obj)
-        self.session.commit()
+        await self.session.commit()
         return obj
 
-    def get_obj_by_id(self, obj, obj_id: int):
-        return self.session.scalar(select(obj).where(obj.id == obj_id))
+    async def get_obj_by_id(self, obj, obj_id: int):
+        return await self.session.scalar(select(obj).where(obj.id == obj_id))
 
-    def get_all_obj(self, obj):
-        return list(self.session.execute(select(obj)).scalars())
+    async def get_all_obj(self, obj):
+        #return await self.session.execute(select(obj)).scalars()
+        return list(await self.session.scalars(select(obj)))
 
-    def raw_query(self, statement):
-        return list(self.session.execute(text(statement)).mappings().fetchall())
+    async def raw_query(self, statement):
+        return await self.session.execute(text(statement)).mappings().fetchall()
 
 
 class AccountRepository(BaseRepository):
 
-    def get_user_by_email(self, user_email: str) -> User | None:
-        return self.session.scalar(select(User).where(User.email == user_email))
+    async def get_user_by_email(self, user_email: str) -> User | None:
+        return await self.session.scalar(select(User).where(User.email == user_email))
 
-    def get_user_with_relation(self, user_email: str, relation) -> User | None:
+    async def get_user_with_relation(self, user_email: str, relation) -> User | None:
         if relation == "Skill":
-            return self.session.execute(select(User).options(selectinload(User.skills)).where(User.email == user_email)).scalar()
+            return await self.session.scalar(select(User).options(selectinload(User.skills)).where(User.email == user_email))
 
         elif relation == "Career":
-            return self.session.execute(select(User).options(selectinload(User.careers)).where(User.email == user_email)).scalar()
+            return await self.session.scalar(select(User).options(selectinload(User.careers)).where(User.email == user_email))
 
         elif relation == "Profile":
-            return self.session.execute(select(User).options(selectinload(User.profiles)).where(User.email == user_email)).scalar()
+            return await self.session.scalar(select(User).options(selectinload(User.profiles)).where(User.email == user_email))
 
         elif relation == "Education":
-            return self.session.execute(select(User).options(selectinload(User.educations)).where(User.email == user_email)).scalar()
+            return await self.session.scalar(select(User).options(selectinload(User.educations)).where(User.email == user_email))
         else:
             raise ValueError("Invalid Relation option")
