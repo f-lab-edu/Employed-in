@@ -1,4 +1,5 @@
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import SQLModel, pool
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -11,6 +12,7 @@ async_engine = create_async_engine(
     echo=config.db.echo,
     poolclass=pool.StaticPool,
 )
+async_session = sessionmaker(bind=async_engine, class_=AsyncSession, expire_on_commit=False, autoflush=False, autocommit=False)
 engine = create_engine(url=config.db.sync_url)
 session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -26,6 +28,17 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+async def get_async_db() -> AsyncSession :
+    async with async_session() as asyncsession:
+        try:
+            yield asyncsession
+        except SQLAlchemyError as e:
+            await asyncsession.rollback()
+            raise e
+        finally:
+            await asyncsession.close()
 
 
 async def close_db() -> None:

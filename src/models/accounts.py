@@ -1,9 +1,12 @@
 import datetime
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, Relationship
 
+from .profile import UserSkill, UserCareer, UserEducation
 
 class User(SQLModel, table=True):
+    __tablename__ = "user"
+
     id: int = Field(primary_key=True)
     email: str = Field(
         min_length=1, max_length=60, unique=True, default=None, index=True
@@ -18,13 +21,22 @@ class User(SQLModel, table=True):
     )
     membership_id: int = Field(foreign_key="membership.id")
 
+    skills: list["Skill"] = Relationship(back_populates="users", link_model=UserSkill)
+    careers: list["Career"] = Relationship(back_populates="users", link_model=UserCareer)
+    educations: list["Education"] = Relationship(back_populates="users", link_model=UserEducation)
+    profiles: list["Profile"] = Relationship(back_populates="user")
+
 
 class UserRelation(SQLModel, table=True):
+    __tablename__ = "user_relation"
+
     id: int = Field(primary_key=True)
     follower: int = Field(foreign_key="user.id")
     followed: int = Field(foreign_key="user.id")
 
 
 class Membership(SQLModel, table=True):
+    __tablename__ = "membership"
+
     id: int = Field(primary_key=True)
     name: str = Field(max_length=10)

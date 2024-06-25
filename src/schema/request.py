@@ -2,7 +2,10 @@ import re
 from typing import Optional
 
 from fastapi import HTTPException
-from pydantic import BaseModel, EmailStr, field_validator, constr, conint
+from datetime import date
+from pydantic import BaseModel, EmailStr, field_validator, constr, conint, AwareDatetime
+
+from src.models.profile import Enterprise
 
 
 class SignUpRequest(BaseModel):
@@ -63,3 +66,35 @@ class CreateProfileRequest(BaseModel):
     profile_id: Optional[int] = None
 
 
+class RegisterSkillRequest(BaseModel):
+    id: Optional[int] = None
+    name: str
+
+
+class RegisterCareerRequest(BaseModel):
+    id: Optional[int] = None
+    position: constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")
+    description: constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")
+    start_time: date
+    end_time: Optional[date] = None
+    enterprise_id: int
+    employment_type_id: int
+
+
+class CreateEnterpriseRequest(BaseModel):
+    name: constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")
+    description: constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")
+    enterprise_type_id: int
+    industry_id: int
+    country_id: int
+
+
+class RegisterEducationRequest(BaseModel):
+    id: Optional[int] = None
+    major: Optional[constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")] = None
+    start_time: date
+    graduate_time: Optional[date] = None
+    grade: Optional[constr(max_length=10)] = None
+    degree_type: Optional[constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")] = None
+    description: Optional[constr(max_length=30, pattern=r"^[a-zA-Z가-힣]+")] = None
+    enterprise_id: int
