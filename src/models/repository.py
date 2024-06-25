@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
 from abc import abstractmethod, ABCMeta, ABC
 
 from src.database import get_db, get_async_db
@@ -9,7 +10,7 @@ from src.models.profile import Profile, UserCareer, Career, Country, Skill, User
 
 
 class BaseRepository:
-    def __init__(self, session: Session = Depends(get_async_db)):
+    def __init__(self, session: AsyncSession = Depends(get_async_db)):
         self.session = session
 
     async def add_object(self, obj):
