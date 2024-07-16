@@ -1,62 +1,57 @@
-from fastapi import Depends
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from fastapi import Depends, HTTPException
+from sqlalchemy import select, text
+from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
+from abc import abstractmethod, ABCMeta, ABC
 
-from src.database import get_db
+from src.database import get_db, get_async_db
 from src.models.accounts import User
-from src.models.profile import Profile, UserCareer, Career, Country
+from src.models.profile import Profile, UserCareer, Career, Country, Skill, UserSkill, UserEducation, Education
 
 
-class UserRepository:
-    def __init__(self, session: Session = Depends(get_db)):
+class BaseRepository:
+    def __init__(self, session: AsyncSession = Depends(get_async_db)):
         self.session = session
 
-    def get_user_by_email(self, user_email: str) -> User | None:
-        return self.session.scalar(select(User).where(User.email == user_email))
+    async def add_object(self, obj):
+        self.session.add(instance=obj)
+        await self.session.commit()
+        await self.session.refresh(instance=obj)
 
-    def create_user(self, user: User) -> User:
-        self.session.add(instance=user)
-        self.session.commit()
-        self.session.refresh(instance=user)
-        return user
+        return obj
 
-    def create_admin_user(self, user: User) -> User:
-        user.is_admin = True
-        return self.create_user(user)
+    async def delete_object(self, obj):
+        self.session.delete(obj)
+        await self.session.commit()
+        return obj
+
+    async def get_obj_by_id(self, obj, obj_id: int):
+        return await self.session.scalar(select(obj).where(obj.id == obj_id))
+
+    async def get_all_obj(self, obj):
+        #return await self.session.execute(select(obj)).scalars()
+        return list(await self.session.scalars(select(obj)))
+
+    async def raw_query(self, statement):
+        return await self.session.execute(text(statement)).mappings().fetchall()
 
 
-class ProfileRepository:
-    def __init__(self, session: Session = Depends(get_db)):
-        self.session = session
+class AccountRepository(BaseRepository):
 
-    def profile_validation(self, user_id: int, country_id: int) -> bool:
-        exists = self.session.scalar(select(Profile).where(Profile.user_id ==user_id, Profile.country_id == country_id))
+    async def get_user_by_email(self, user_email: str) -> User | None:
+        return await self.session.scalar(select(User).where(User.email == user_email))
 
-        return False if exists else True
+    async def get_user_with_relation(self, user_email: str, relation) -> User | None:
+        if relation == "Skill":
+            return await self.session.scalar(select(User).options(selectinload(User.skills)).where(User.email == user_email))
 
-    def filter_profile_by_user(self, user_id: int) -> list[(Profile, Country)]:
-        return list(self.session.execute(select(Profile, Country.name).join(Country).where(Profile.user_id == user_id)))
+        elif relation == "Career":
+            return await self.session.scalar(select(User).options(selectinload(User.careers)).where(User.email == user_email))
 
-    def get_profile_by_id(self, profile_id: int, user_id: int):
-        result = self.session.execute(select(Profile, Country.name).join(Country).where(Profile.id == profile_id, Profile.user_id == user_id)).fetchone()
+        elif relation == "Profile":
+            return await self.session.scalar(select(User).options(selectinload(User.profiles)).where(User.email == user_email))
 
-        if not result:
-            return (None, None)
-
-        return (result[0], result[1])
-
-    def create_profile(self, profile: Profile) -> Profile:
-        self.session.add(instance=profile)
-        self.session.commit()
-        self.session.refresh(instance=profile)
-        return profile
-
-    def delete_profile(self, profile_id: int, user_id: int) -> Profile | None:
-        profile, country = self.get_profile_by_id(profile_id=profile_id, user_id=user_id)
-
-        if not profile:
-            return None
-
-        self.session.delete(profile)
-        self.session.commit()
-        return profile
+        elif relation == "Education":
+            return await self.session.scalar(select(User).options(selectinload(User.educations)).where(User.email == user_email))
+        else:
+            raise ValueError("Invalid Relation option")

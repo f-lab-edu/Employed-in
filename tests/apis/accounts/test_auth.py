@@ -10,7 +10,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from freezegun import freeze_time
 
 from src.models.accounts import User
-from src.models.repository import UserRepository
+from src.models.repository import AccountRepository
 from src.service.accounts import UserService
 from src.interfaces.permission import Auths
 
@@ -34,8 +34,8 @@ async def test_signup_successfully(client: AsyncClient, session: AsyncSession, m
     )
 
     new_user = mocker.patch.object(
-        UserRepository,
-        "create_user",
+        AccountRepository,
+        "add_object",
         return_value=test_user,
     )
 
@@ -70,7 +70,7 @@ async def test_signup_registered_case(
     client: AsyncClient, session: AsyncSession, mocker
 ):
     user = mocker.patch.object(
-        UserRepository,
+        AccountRepository,
         "get_user_by_email",
         return_value=User(
             id=None,
@@ -106,7 +106,7 @@ async def test_signup_registered_case(
 @pytest.mark.asyncio
 async def test_login_successfully(client: AsyncClient, session: AsyncSession, mocker):
     user = mocker.patch.object(
-        UserRepository,
+        AccountRepository,
         "get_user_by_email",
         return_value=User(
             id=1,
@@ -160,7 +160,7 @@ async def test_login_wrong_password_case(
     client: AsyncClient, session: AsyncSession, mocker
 ):
     user = mocker.patch.object(
-        UserRepository,
+        AccountRepository,
         "get_user_by_email",
         return_value=User(
             id=1,
@@ -216,12 +216,12 @@ async def test_basic_authentication(mocker):
         )
 
     user = mocker.patch.object(
-        UserRepository,
+        AccountRepository,
         "get_user_by_email",
         return_value=test_user
     )
 
-    user: User = Auths().basic_authentication(token=test_token, user_repo=UserRepository())
+    user: User = await Auths().basic_authentication(token=test_token, account_repo=AccountRepository())
 
     assert user == test_user
 
@@ -243,12 +243,12 @@ async def test_admin_permission(mocker):
     )
 
     user = mocker.patch.object(
-        UserRepository,
+        AccountRepository,
         "get_user_by_email",
         return_value=test_user
     )
 
-    user: User = Auths().admin_permission(token=test_token, user_repo=UserRepository())
+    user: User = await Auths().admin_permission(token=test_token, account_repo=AccountRepository())
 
     assert user == test_user
 
@@ -270,11 +270,11 @@ async def test_admin_permission_failed(mocker):
     )
 
     user = mocker.patch.object(
-        UserRepository,
+        AccountRepository,
         "get_user_by_email",
         return_value=test_user
     )
     try:
-        result = Auths().admin_permission(token=test_token, user_repo=UserRepository())
+        result = await Auths().admin_permission(token=test_token, account_repo=AccountRepository())
     except HTTPException:
         assert True
